@@ -55,6 +55,7 @@ AC_CONFIG_FILES([
 	src/io/packet_classifiers/c_types_pktclassifier/Makefile
 	src/io/ports/Makefile
 	src/io/ports/mmap/Makefile
+	src/io/ports/pf_ring/Makefile
 	src/io/ports/mockup/Makefile
 	src/io/ports/vlink/Makefile
 	src/io/scheduler/Makefile
