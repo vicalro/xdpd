@@ -66,6 +66,9 @@ ADD_PLUGIN(xmp)
 #REST
 ADD_PLUGIN(rest)
 
+#PY
+ADD_PLUGIN(py)
+
 #Example
 ADD_PLUGIN(example)
 

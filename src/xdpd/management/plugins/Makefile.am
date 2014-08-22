@@ -30,6 +30,9 @@ include xmp/Plugin.am
 #REST
 include rest/Plugin.am
 
+#PY
+include py/Plugin.am
+
 #[+] Add yours here...
 
 #Example (leave it always at the very end)

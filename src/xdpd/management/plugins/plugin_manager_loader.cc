@@ -33,6 +33,9 @@ using namespace xdpd;
 #ifdef WITH_MGMT_REST
 	#include "rest/rest.h"
 #endif
+#ifdef WITH_MGMT_PY
+	#include "py/py.h"
+#endif
 //Add more here [+]...
 
 //
@@ -57,8 +60,13 @@ void plugin_manager::pre_init(){
 	#endif
 
 	#ifdef WITH_MGMT_REST
-		//Register example plugin
+		//Register rest plugin
 		register_plugin(new rest());	
+	#endif
+
+	#ifdef WITH_MGMT_PY
+		//Register py plugin
+		register_plugin(new py());	
 	#endif
 
 	//Generally the example should be the last one...

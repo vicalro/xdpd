@@ -1,0 +1,5 @@
+#Always add the library CONDITIONALLY
+
+if WITH_MGMT_PY
+libxdpd_mgmt_plugins_la_LIBADD += py/libxdpd_mgmt_py.la
+endif
