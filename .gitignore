@@ -12,6 +12,7 @@
 *.swo
 *.out
 *.kdev4
+*.pyc
 
 config/libtool.m4
 config/ltoptions.m4

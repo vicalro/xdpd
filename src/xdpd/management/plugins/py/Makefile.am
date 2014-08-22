@@ -6,4 +6,4 @@ noinst_LTLIBRARIES = libxdpd_mgmt_py.la
 libxdpd_mgmt_py_la_SOURCES = \
 	py.cc 
 
-libxdpd_mgmt_py_la_LIBADD = 
+libxdpd_mgmt_py_la_LIBADD = -lpython2.7  

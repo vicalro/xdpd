@@ -4,12 +4,33 @@
 #include "../../plugin_manager.h"
 #include "../../switch_manager.h"
 
+//Include python header
+#include <python2.7/Python.h>
+
 using namespace xdpd;
 
 #define PLUGIN_NAME "py_plugin" 
 
 void py::init(){
+
+	PyObject *strret, *mymod, *strfunc, *strargs;
+
 	ROFL_INFO("[xdpd]["PLUGIN_NAME"] Loading...\n");
+
+	Py_Initialize();    	
+	PySys_SetPath((char*)"/home/marc/BISDN/code/github/xdpd//src/xdpd/management/plugins/py/"); // before ..
+	mymod = PyImport_ImportModule("helloworld");
+
+
+	strfunc = PyObject_GetAttrString(mymod, "myfunc");
+	strargs = Py_BuildValue("(s)", "XXX");
+	strret = PyEval_CallObject(strfunc, strargs);
+
+	(void)strret;
+
+	Py_Finalize();
+	
+	ROFL_INFO("[xdpd]["PLUGIN_NAME"] Loaded!\n");
 }
 
 //Events; print nice traces
