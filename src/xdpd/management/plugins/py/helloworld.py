@@ -1,7 +1,6 @@
 
-def myfunc(t):
-	print "HELLO WORLD!"+t
-	while 1:
-		pass
-
-#myfunc("d")
+def launcher():
+	import time
+	print "[xdpd][py][helloworld] HELLO WORLD!"
+	time.sleep(5)
+	print "[xdpd][py][helloworld] Exiting!!"
