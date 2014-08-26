@@ -869,7 +869,13 @@ rofl_result_t port_manager_destroy_pex_port(const char *port_name)
 		pex_port_mapping[port_state->pex_id] = NULL;
 		
 		ROFL_ERR(DRIVER_NAME"[XXX] mempool count before the release of the kni: %lu\n", rte_mempool_count(pool_direct));
-		rte_kni_release(port_state->kni);	
+		if(rte_kni_release(port_state->kni) != 0)
+		{
+			ROFL_ERR(DRIVER_NAME"[port_manager] Cannot release PEX port '%s'\n", port->name);
+			assert(0);
+			pthread_rwlock_unlock(&rwlock);
+			return ROFL_FAILURE;
+		}	
 		ROFL_ERR(DRIVER_NAME"[XXX] mempool count after the release of the kni: %lu\n", rte_mempool_count(pool_direct));
 		
 		port_state->kni = NULL;
