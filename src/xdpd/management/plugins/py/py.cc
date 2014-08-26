@@ -6,10 +6,16 @@
 
 //Include python header
 #include <python2.7/Python.h>
+#include "exported.h"
 
 using namespace xdpd;
 
 #define PLUGIN_NAME "py_plugin" 
+#include "exported.h"
+
+unsigned int xdpd::py_proxy::hola::py_sum_test(unsigned int x){
+	return x+1;
+}
 	
 const std::string py::LAUNCHER_FUNC="launcher";
 py* py::inst;
@@ -63,7 +69,7 @@ void py::init(){
 
 	//Initialize Python interpreter
 	Py_Initialize();    	
-	PySys_SetPath((char*)"/home/marc/BISDN/code/github/xdpd//src/xdpd/management/plugins/py/"); // before ..
+	PySys_SetPath((char*)"/home/marc/BISDN/code/github/xdpd//src/xdpd/management/plugins/py:/home/marc/BISDN/code/github/xdpd//src/xdpd/management/plugins/py/python"); // before ..
 
 	//Init threads
 	PyEval_InitThreads();
@@ -71,10 +77,10 @@ void py::init(){
 
 	/* TODO remove	*/
 
-	std::string module = "helloworld";
-	launch(module);
+	//std::string module = "helloworld";
+	//launch(module);
 
-	module = "launcher";
+	std::string module = "launcher";
 	launch(module);
 
 	/* TODO remove	*/
