@@ -771,8 +771,10 @@ static switch_port_t* configure_pex_port_kni(const char *pex_name, const char *p
 
 	ops.port_id = pex_id;
 	ops.config_network_if = kni_config_network_interface;
-
+	
+	ROFL_ERR(DRIVER_NAME"[XXX] mempool count before the allocation of the kni: %lu\n", rte_mempool_count(pool_direct));
 	ps->kni = rte_kni_alloc(pool_direct, &conf, &ops);
+	ROFL_ERR(DRIVER_NAME"[XXX] mempool count after the allocation of the kni: %lu\n", rte_mempool_count(pool_direct));
 
 	if (ps->kni == NULL)
 	{
@@ -807,6 +809,7 @@ rofl_result_t port_manager_create_pex_port(const char *pex_name, const char *pex
 		if(! ( port = configure_pex_port_dpdk(pex_name,pex_port) ) )
 		{
 			ROFL_ERR(DRIVER_NAME"[port_manager] Unable to initialize DPDK PEX port %s\n", pex_port);
+			assert(0);
 			return ROFL_FAILURE;
 		}
 	}
@@ -815,6 +818,7 @@ rofl_result_t port_manager_create_pex_port(const char *pex_name, const char *pex
 		if(! ( port = configure_pex_port_kni(pex_name,pex_port) ) )
 		{
 			ROFL_ERR(DRIVER_NAME"[port_manager] Unable to initialize KNI PEX port %s\n", pex_port);
+			assert(0);
 			return ROFL_FAILURE;
 		}
 	}
@@ -864,7 +868,10 @@ rofl_result_t port_manager_destroy_pex_port(const char *port_name)
 
 		pex_port_mapping[port_state->pex_id] = NULL;
 		
+		ROFL_ERR(DRIVER_NAME"[XXX] mempool count before the release of the kni: %lu\n", rte_mempool_count(pool_direct));
 		rte_kni_release(port_state->kni);	
+		ROFL_ERR(DRIVER_NAME"[XXX] mempool count after the release of the kni: %lu\n", rte_mempool_count(pool_direct));
+		
 		port_state->kni = NULL;
 	
 		if(physical_switch_remove_port(port_name) != ROFL_SUCCESS)

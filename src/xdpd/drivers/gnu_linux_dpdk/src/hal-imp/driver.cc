@@ -87,7 +87,8 @@ hal_result_t hal_driver_init(const char* extra_params){
 
 	if (pool_direct == NULL)
 		rte_panic("Cannot init direct mbuf pool\n");
-
+		
+	ROFL_ERR(DRIVER_NAME"[XXX] mempool count just after its creation: %lu\n", rte_mempool_count(pool_direct));
 
 	pool_indirect = rte_mempool_create("pool_indirect", NB_MBUF,
 			sizeof(struct rte_mbuf), 32,

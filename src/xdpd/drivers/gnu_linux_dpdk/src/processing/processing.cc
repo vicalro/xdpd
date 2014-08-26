@@ -580,7 +580,7 @@ rofl_result_t processing_schedule_pex_port(switch_port_t* port)
 */
 rofl_result_t processing_deschedule_port(switch_port_t* port){
 
-	unsigned int i;
+	unsigned int i, j, k, len;
 	bool* scheduled;
 	unsigned int* core_id, *port_id, *core_port_slot;
 
@@ -696,7 +696,7 @@ rofl_result_t processing_deschedule_port(switch_port_t* port){
 				processing_core_tasks[i].phy_ports[*port_id].core_id = 0xFFFFFFFF;
 				break;
 				
-			case PORT_TYPE_PEX_DPDK_SECONDARY:	
+			case PORT_TYPE_PEX_DPDK_SECONDARY:
 			case PORT_TYPE_PEX_DPDK_KNI:
 				processing_core_tasks[i].pex_ports[*port_id].present = false;
 				processing_core_tasks[i].pex_ports[*port_id].core_id = 0xFFFFFFFF;
@@ -712,6 +712,36 @@ rofl_result_t processing_deschedule_port(switch_port_t* port){
 	
 	//Wait for all the active cores to sync
 	processing_wait_for_cores_to_sync();
+
+	//Now we are realising any pending tx mbuf	
+	for(i=0;i<RTE_MAX_LCORE;++i){
+
+		switch(port->type){
+			case PORT_TYPE_PHYSICAL: 
+				for(j=0;j<IO_IFACE_NUM_QUEUES;++j){
+					struct mbuf_burst pkt_burst = processing_core_tasks[i].phy_ports[*port_id].tx_queues_burst[j];
+					len = pkt_burst.len;
+					for(k=0;k<len;k++){
+						rte_pktmbuf_free(pkt_burst.burst[k]);
+					}
+				}
+				break;
+				
+			case PORT_TYPE_PEX_DPDK_SECONDARY:
+			case PORT_TYPE_PEX_DPDK_KNI:
+				for(j=0;j<IO_IFACE_NUM_QUEUES;++j){
+					struct mbuf_burst pkt_burst = processing_core_tasks[i].pex_ports[*port_id].tx_queues_burst[j];
+					len = pkt_burst.len;
+					for(k=0;k<len;k++){
+						rte_pktmbuf_free(pkt_burst.burst[k]);
+					}
+				}
+				break;
+		
+			default: assert(0);
+				return ROFL_FAILURE;
+		}
+	}
 
 	rte_spinlock_unlock(&mutex);	
 	
