@@ -51,10 +51,10 @@ public:
 		os << " }\n";
 		if(f.get_version() != 0x1){
 			os << " {, instructions"; 
-				os << f.get_instructions();	
+			f.get_instructions().str_sl(os);	
 		}else{
 			os << " {, actions"; 
-				os << f.get_actions();	
+			f.get_actions().str_sl(os);	
 		}
 
 		os << " }\n";

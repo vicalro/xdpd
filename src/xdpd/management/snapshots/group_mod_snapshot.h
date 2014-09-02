@@ -43,7 +43,7 @@ public:
 
 		//TODO: use (non-exisiting yet) single line dumpers
 		os << "\n\t\t\t\t { actions: "; 
-		os << b.get_actions();
+		b.get_actions().str_sl(os);;
 		os << " }\n";
 		
 		return os;
