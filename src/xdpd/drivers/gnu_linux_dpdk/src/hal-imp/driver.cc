@@ -54,13 +54,12 @@ using namespace xdpd::gnu_linux;
 * @ingroup driver_management
 */
 
-#define EAL_ARGS 6
 
 hal_result_t hal_driver_init(const char* extra_params){
 
 	int ret;
-	const char* argv_fake[EAL_ARGS] = {"xdpd", "-c", XSTR(RTE_CORE_MASK), "-n", XSTR(RTE_MEM_CHANNELS), NULL};
-	
+	const char* argv_fake[] = {"xdpd", "-c", XSTR(RTE_CORE_MASK), "-n", XSTR(RTE_MEM_CHANNELS), NULL};
+	const int EAL_ARGS = sizeof(argv_fake)/sizeof(*argv_fake);
 	
 	ROFL_INFO(DRIVER_NAME" Initializing...\n");
 	
@@ -96,12 +95,6 @@ hal_result_t hal_driver_init(const char* extra_params){
 			rte_pktmbuf_init, NULL,
 			SOCKET0, 0);
 	
-	/* init driver(s) */
-	if (rte_pmd_init_all() < 0)
-		rte_exit(EXIT_FAILURE, "Cannot init pmd\n");
-	if (rte_eal_pci_probe() < 0)
-		rte_exit(EXIT_FAILURE, "Cannot probe PCI\n");
-
 	if (pool_indirect == NULL)
 		rte_panic("Cannot init indirect mbuf pool\n");
 
@@ -113,8 +106,10 @@ hal_result_t hal_driver_init(const char* extra_params){
 		return HAL_FAILURE;
 
 	//Discover and initialize rofl-pipeline state
-	if(iface_manager_discover_system_ports() != ROFL_SUCCESS)
+	if(iface_manager_discover_system_ports() != ROFL_SUCCESS) {
+		ROFL_ERR(DRIVER_NAME"ERROR: Failed to discover system ports - Aborting\n");
 		return HAL_FAILURE;
+	}
 
 	//Initialize processing
 	if(processing_init() != ROFL_SUCCESS)
@@ -478,45 +473,58 @@ hal_result_t hal_driver_detach_port_from_switch(uint64_t dpid, const char* name)
 	if( !port || !port->attached_sw || port->attached_sw->dpid != dpid)
 		return HAL_FAILURE;
 
-	//Snapshoting the port *before* it is detached 
-	port_snapshot = physical_switch_get_port_snapshot(port->name); 
-	
-	if(port->type == PORT_TYPE_VIRTUAL){
-		/*
-		* Virtual link
-		*/
-		port_pair = (switch_port_t*)port->platform_port_state;
-		port_pair_snapshot = physical_switch_get_port_snapshot(port_pair->name); 
-		
-		//Make sure that pkts are not attempting to access the port_pair between 
-		//detachment of port_pair and port
-		port->platform_port_state = NULL;
-			
-		//Detach pair port from the pipeline
-		if(physical_switch_detach_port_from_logical_switch(port_pair,port_pair->attached_sw) != ROFL_SUCCESS){
-			ROFL_ERR(DRIVER_NAME" Error detaching vlink port %s.\n",port_pair->name);
-			assert(0);
-			goto DRIVER_DETACH_ERROR;	
-		}
-
-
-		//Notify removal of both ports
-		hal_cmm_notify_port_delete(port_snapshot);
-		hal_cmm_notify_port_delete(port_pair_snapshot);
-	}else{
-		/*
-		*  PHYSICAL
-		*/
-		//Deschedule port from processing (phyiscal port)
-		processing_deschedule_port(port);
-	}
-
 	//Detach it
 	if(physical_switch_detach_port_from_logical_switch(port,lsw) != ROFL_SUCCESS){
 		ROFL_ERR(DRIVER_NAME" Error detaching port %s.\n",port->name);
 		assert(0);
 		goto DRIVER_DETACH_ERROR;	
 	}
+	
+	if(port->type == PORT_TYPE_VIRTUAL){
+		/*
+		* Virtual link
+		*/
+		
+		//Snapshoting the port *before* it is detached 
+		port_snapshot = physical_switch_get_port_snapshot(port->name); 
+
+		port_pair = (switch_port_t*)port->platform_port_state;
+		port_pair_snapshot = physical_switch_get_port_snapshot(port_pair->name); 
+		
+		//Notify removal of both ports
+		hal_cmm_notify_port_delete(port_snapshot);
+		hal_cmm_notify_port_delete(port_pair_snapshot);
+	
+		//Detach pair
+		if(physical_switch_detach_port_from_logical_switch(port_pair, port_pair->attached_sw) != ROFL_SUCCESS){
+			ROFL_ERR(DRIVER_NAME" Error detaching port %s.\n",port_pair->name);
+			assert(0);
+			goto DRIVER_DETACH_ERROR;	
+		}
+
+		//Remove from the pipeline and delete
+		if(physical_switch_remove_port(port->name) != ROFL_SUCCESS){
+			ROFL_ERR(DRIVER_NAME" Error removing port from the physical_switch. The port may become unusable...\n");
+			assert(0);
+			return HAL_FAILURE;
+			
+		}
+		
+		if(physical_switch_remove_port(port_pair->name) != ROFL_SUCCESS){
+			ROFL_ERR(DRIVER_NAME" Error removing port from the physical_switch. The port may become unusable...\n");
+			assert(0);
+			goto DRIVER_DETACH_ERROR;
+			
+		}
+	}else{
+		/*
+		*  PHYSICAL
+		*/
+		//Deschedule port from processing (physical port)
+		processing_deschedule_port(port);
+	}
+
+
 	
 	return HAL_SUCCESS; 
 

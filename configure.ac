@@ -1,4 +1,4 @@
-AC_INIT(xdpd, m4_esyscmd_s(cat VERSION), xdpd@bisdn.de, xdpd)
+AC_INIT(xdpd, m4_esyscmd_s(cat VERSION), xdpd-devel@xdpd.org, xdpd, http://www.xdpd.org)
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
@@ -35,7 +35,7 @@ AC_DEFINE(__STDC_CONSTANT_MACROS)
 AC_CHECK_LIB(pthread, pthread_kill,,AC_MSG_ERROR([pthread library not found])) 
 AC_CHECK_LIB(rt, clock_gettime,,[AC_MSG_ERROR([rt library not found])]) 
 
-PKG_CHECK_MODULES([ROFL], [rofl >= 0.5.0], [have_rofl=yes], AC_MSG_ERROR([Revised OpenFlow Libraries(ROFL) not found]))
+PKG_CHECK_MODULES([ROFL], [rofl >= 0.6.0], [have_rofl=yes], AC_MSG_ERROR([Revised OpenFlow Libraries(ROFL) not found]))
 if (test "${have_rofl}" = "yes"); then
         CPPFLAGS+="$ROFL_CFLAGS"
         LIBS+="$ROFL_LIBS"
@@ -76,11 +76,16 @@ AC_CONFIG_FILES([
 	src/xdpd/drivers/Makefile
 	src/xdpd/management/Makefile
 	src/xdpd/management/plugins/Makefile
+	src/xdpd/management/snapshots/Makefile
 	src/xdpd/openflow/Makefile
 	src/xdpd/openflow/openflow10/Makefile
 	src/xdpd/openflow/openflow12/Makefile
 	src/xdpd/openflow/openflow13/Makefile
+	src/xdpd/openflow/pirl/Makefile
 	test/Makefile
+	test/xdpd/Makefile
+	test/xdpd/unit/Makefile
+	test/xdpd/unit/pirl/Makefile
 ])
 
 # Doxygen (here to be the last Makefile) 

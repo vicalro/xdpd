@@ -8,7 +8,70 @@ Legend:
 Change log
 ==========
 
-v0.4RC3
+v0.6.0
+
+[O][gnu-linux-dpdk] Moved platform driver to DPDK v1.7 (thanks D. Verbeiren)
+
+
+
+v0.5.1
+
+[+][gnu-linux][gnu-linux-dpdk] GTP push/pop actions revised
+[B][gnu-linux][gnu-linux-dpdk] preserve checksum calculation flags in function hal_driver_of1x_process_packet_out
+
+v0.5.0
+
+[+] OF1.3 support marked as stable
+[+] Changed default logging level from NOTICE(5) to ERROR (3)
+[+][CMM] Added per LSI Packet In Rate Limiter(PIRL) functionality and config plugin support.
+[+][CMM] Added switch_manager::get_switch_table_flows() to switch_manager #21 
+[+][CMM] Adding port_manager::is_vlink(), port_manager::get_port_info() and port_manager::get_vlink_pair() #17 
+
+[+][drivers] Added packet_proto_meta_imp.h to increase code re-usage (to be used with the default classifier)
+[+][drivers] Implemented new optimized c_types_pktclassifier for sw drivers
+
+[+][gnu-linux] Filtering loopback interface from available interfaces list #33
+
+[+][gnu-linux][gnu-linux-dpdk] Performance optimizations 
+[+][gnu-linux][gnu-linux-dpdk] Implemented COPY_TTL_IN/COPY_TTL_OUT between IP and MPLS
+[+][gnu-linux][gnu-linux-dpdk] Added SCTP support 
+[+][gnu-linux][gnu-linux-dpdk] Added PBB support 
+[+][gnu-linux][gnu-linux-dpdk] Increased default supported num. of MPLS labels to 32
+
+[B][gnu-linux][gnu-linux-dpdk] Fixed bug during replication of packets
+
+v0.4.4
+
+[B] Fix compile errors on older gcc (e.g. v4.4) and old kernels (up to 2.6) where TP_STATUS_VLAN_VALID was not defined
+
+[B][CMM] Fixed dead-lock during destroy LSI in multi-LSI scenarios with high rate of PKT_INs. #31
+
+v0.4.3
+
+[B][CMM] OF1.2/OF1.3 added mask value for ARP_SPA 
+[B][CMM] OF1.2/OF1.3 implemented WRITE_METADATA instruction parsing
+
+[B][gnu-linux] pktclassifier: fixed bug handling unknown ICMPv6 options
+
+[B][gnu-linux-dpdk] Fixing invalid release of buffers that were not in the bufferpool (core datapacket_t)
+[B][gnu-linux-dpdk] Preventing double RX/TX queue setup #24 
+
+v0.4.2 
+
+[B] Fixing deadlock in switch_manager #16
+[B] Fixing driver-extra-params #19
+
+v0.4.1
+
+[+] Improve markdown support in READMEs #12
+[B] Fixed OF1.2 VLAN matching translation according to spec, issue #15
+
+[B][gnu-linux] Fixed make check when rofl-pipeline is compiled with inline funcs. #8
+[B][gnu-linux] Unbalanced throughput among ports beyond I/O limit #10
+
+[+][gnu-linux-dpdk] Change verbosity of I/O debug logs #11
+
+v0.4.0
 
 [+] Added tutorial on how to create new platform drivers under src/xdpd/drivers/README
 [+] Changed main version detection; now it uses VERSION file instead of 'git tag' 

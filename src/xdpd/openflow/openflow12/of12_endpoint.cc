@@ -25,7 +25,7 @@ of12_endpoint::of12_endpoint(
 	versionbitmap.add_ofp_version(openflow12::OFP_VERSION);
 
 	//Connect to controller
-	crofbase::rpc_connect_to_ctl(versionbitmap, reconnect_start_timeout, socket_type, socket_params);
+	crofbase::rpc_connect_to_ctl(versionbitmap, socket_type, socket_params);
 }
 
 /*
@@ -36,9 +36,9 @@ of12_endpoint::of12_endpoint(
 
 void
 of12_endpoint::handle_features_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_features_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_features_request& msg)
 {
 	logical_switch_port_t* ls_port;	
 	switch_port_snapshot_t* _port;	
@@ -46,7 +46,7 @@ of12_endpoint::handle_features_request(
 	of1x_switch_snapshot_t* of12switch = (of1x_switch_snapshot_t*)hal_driver_get_switch_snapshot_by_dpid(sw->dpid);
 
 	if(!of12switch)
-		throw eRofBase();
+		throw rofl::eRofBase();
 	
 	uint32_t num_of_tables 	= 0;
 	uint32_t num_of_buffers = 0;
@@ -103,6 +103,7 @@ of12_endpoint::handle_features_request(
 	of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
 
 	ctl.send_features_reply(
+			auxid,
 			msg.get_xid(),
 			sw->dpid,
 			num_of_buffers,	// n_buffers
@@ -117,9 +118,9 @@ of12_endpoint::handle_features_request(
 
 void
 of12_endpoint::handle_get_config_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_get_config_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_get_config_request& msg)
 {
 	uint16_t flags = 0x0;
 	uint16_t miss_send_len = 0;
@@ -127,7 +128,7 @@ of12_endpoint::handle_get_config_request(
 	of1x_switch_snapshot_t* of12switch = (of1x_switch_snapshot_t*)hal_driver_get_switch_snapshot_by_dpid(sw->dpid);
 
 	if(!of12switch)
-		throw eRofBase();
+		throw rofl::eRofBase();
 	
 	flags = of12switch->pipeline.capabilities;
 	miss_send_len = of12switch->pipeline.miss_send_len;
@@ -135,16 +136,16 @@ of12_endpoint::handle_get_config_request(
 	//Destroy the snapshot
 	of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
 
-	ctl.send_get_config_reply(msg.get_xid(), flags, miss_send_len);
+	ctl.send_get_config_reply(auxid, msg.get_xid(), flags, miss_send_len);
 }
 
 
 
 void
 of12_endpoint::handle_desc_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_desc_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_desc_stats_request& msg)
 {
 	std::string mfr_desc(PACKAGE_NAME);
 	std::string hw_desc(VERSION);
@@ -159,16 +160,16 @@ of12_endpoint::handle_desc_stats_request(
 			system_manager::get_driver_description()
 			);
 
-	ctl.send_desc_stats_reply(msg.get_xid(), desc_stats);
+	ctl.send_desc_stats_reply(auxid, msg.get_xid(), desc_stats);
 }
 
 
 
 void
 of12_endpoint::handle_table_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_table_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_table_stats_request& msg)
 {
 	unsigned int num_of_tables;
 	of1x_flow_table_t* table;
@@ -177,7 +178,7 @@ of12_endpoint::handle_table_stats_request(
 	of1x_switch_snapshot_t* of12switch = (of1x_switch_snapshot_t*)hal_driver_get_switch_snapshot_by_dpid(sw->dpid);
 
 	if(!of12switch)
-		throw eRofBase();
+		throw rofl::eRofBase();
 	
 	num_of_tables = of12switch->pipeline.num_of_tables;
 	rofl::openflow::coftablestatsarray tablestatsarray(ctl.get_version());
@@ -202,23 +203,23 @@ of12_endpoint::handle_table_stats_request(
 		tablestatsarray.set_table_stats(table_id).set_config(tc->table_miss_config);
 		tablestatsarray.set_table_stats(table_id).set_max_entries(table->max_entries);
 		tablestatsarray.set_table_stats(table_id).set_active_count(table->num_of_entries);
-		tablestatsarray.set_table_stats(table_id).set_lookup_count(table->stats.lookup_count);
-		tablestatsarray.set_table_stats(table_id).set_matched_count(table->stats.matched_count);
+		tablestatsarray.set_table_stats(table_id).set_lookup_count(table->stats.s.counters.lookup_count);
+		tablestatsarray.set_table_stats(table_id).set_matched_count(table->stats.s.counters.matched_count);
 	}
 
 	//Destroy the snapshot
 	of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
 
-	ctl.send_table_stats_reply(msg.get_xid(), tablestatsarray, false);
+	ctl.send_table_stats_reply(auxid, msg.get_xid(), tablestatsarray, false);
 }
 
 
 
 void
 of12_endpoint::handle_port_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_port_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_port_stats_request& msg)
 {
 
 	switch_port_snapshot_t* port;
@@ -227,7 +228,7 @@ of12_endpoint::handle_port_stats_request(
 	of1x_switch_snapshot_t* of12switch = (of1x_switch_snapshot_t*)hal_driver_get_switch_snapshot_by_dpid(sw->dpid);
 
 	if(!of12switch)
-		throw eRofBase();
+		throw rofl::eRofBase();
 
 	rofl::openflow::cofportstatsarray portstatsarray(ctl.get_version());
 
@@ -299,16 +300,16 @@ of12_endpoint::handle_port_stats_request(
 	//Destroy the snapshot
 	of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
 
-	ctl.send_port_stats_reply(msg.get_xid(), portstatsarray, false);
+	ctl.send_port_stats_reply(auxid, msg.get_xid(), portstatsarray, false);
 }
 
 
 
 void
 of12_endpoint::handle_flow_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_flow_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_flow_stats_request& msg)
 {
 	of1x_stats_flow_msg_t* fp_msg = NULL;
 	of1x_flow_entry_t* entry = NULL;
@@ -320,7 +321,7 @@ of12_endpoint::handle_flow_stats_request(
 		of12_translation_utils::of12_map_flow_entry_matches(&ctl, msg.get_flow_stats().get_match(), sw, entry);
 	}catch(...){
 		of1x_destroy_flow_entry(entry);	
-		throw eBadRequestBadStat(); 
+		throw rofl::eBadRequestBadStat();
 	}
 
 	//Ask the Forwarding Plane to process stats
@@ -334,7 +335,7 @@ of12_endpoint::handle_flow_stats_request(
 	
 	if(!fp_msg){
 		of1x_destroy_flow_entry(entry);	
-		throw eBadRequestBadStat(); 
+		throw rofl::eBadRequestBadStat();
 	}
 
 	//Construct OF message
@@ -370,7 +371,7 @@ of12_endpoint::handle_flow_stats_request(
 	
 	try{
 		//Send message
-		ctl.send_flow_stats_reply(msg.get_xid(), flowstatsarray);
+		ctl.send_flow_stats_reply(auxid, msg.get_xid(), flowstatsarray);
 	}catch(...){
 		of1x_destroy_stats_flow_msg(fp_msg);	
 		of1x_destroy_flow_entry(entry);	
@@ -385,9 +386,9 @@ of12_endpoint::handle_flow_stats_request(
 
 void
 of12_endpoint::handle_aggregate_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_aggr_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_aggr_stats_request& msg)
 {
 	of1x_stats_flow_aggregate_msg_t* fp_msg;
 	of1x_flow_entry_t* entry;
@@ -399,13 +400,13 @@ of12_endpoint::handle_aggregate_stats_request(
 	entry = of1x_init_flow_entry(false);
 
 	if(!entry)
-		throw eBadRequestBadStat(); 
+		throw rofl::eBadRequestBadStat();
 
 	try{	
 		of12_translation_utils::of12_map_flow_entry_matches(&ctl, msg.get_aggr_stats().get_match(), sw, entry);
 	}catch(...){
 		of1x_destroy_flow_entry(entry);	
-		throw eBadRequestBadStat(); 
+		throw rofl::eBadRequestBadStat();
 	}
 
 	//TODO check error while mapping 
@@ -421,7 +422,7 @@ of12_endpoint::handle_aggregate_stats_request(
 	
 	if(!fp_msg){
 		of1x_destroy_flow_entry(entry);
-		throw eBadRequestBadStat(); 
+		throw rofl::eBadRequestBadStat();
 	}
 
 	try{
@@ -431,7 +432,7 @@ of12_endpoint::handle_aggregate_stats_request(
 				fp_msg->byte_count,
 				fp_msg->flow_count);
 		//Construct OF message
-		ctl.send_aggr_stats_reply(msg.get_xid(), aggr_stats_reply);
+		ctl.send_aggr_stats_reply(auxid, msg.get_xid(), aggr_stats_reply);
 	}catch(...){
 		of1x_destroy_stats_flow_aggregate_msg(fp_msg);	
 		of1x_destroy_flow_entry(entry);
@@ -447,9 +448,9 @@ of12_endpoint::handle_aggregate_stats_request(
 
 void
 of12_endpoint::handle_queue_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_queue_stats_request& pack,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_queue_stats_request& pack)
 {
 
 	switch_port_snapshot_t* port = NULL;
@@ -459,13 +460,13 @@ of12_endpoint::handle_queue_stats_request(
 	of1x_switch_snapshot_t* of12switch = (of1x_switch_snapshot_t*)hal_driver_get_switch_snapshot_by_dpid(sw->dpid);
 
 	if(!of12switch)
-		throw eRofBase();
+		throw rofl::eRofBase();
 
 
 	if( ((portnum >= of12switch->max_ports) && (portnum != openflow12::OFPP_ALL)) || portnum == 0){
 		//Destroy the snapshot
 		of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
-		throw eBadRequestBadPort(); 	//Invalid port num
+		throw rofl::eBadRequestBadPort(); 	//Invalid port num
 	}
 
 	rofl::openflow::cofqueuestatsarray queuestatsarray(ctl.get_version());
@@ -505,7 +506,7 @@ of12_endpoint::handle_queue_stats_request(
 				if(queue_id >= port->max_queues){
 					//Destroy the snapshot
 					of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
-					throw eBadRequestBadPort(); 	//FIXME send a BadQueueId error
+					throw rofl::eBadRequestBadPort(); 	//FIXME send a BadQueueId error
 				}
 
 				//Check if the queue is really in use
@@ -525,16 +526,16 @@ of12_endpoint::handle_queue_stats_request(
 	//Destroy the snapshot
 	of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
 	
-	ctl.send_queue_stats_reply(pack.get_xid(), queuestatsarray);
+	ctl.send_queue_stats_reply(auxid, pack.get_xid(), queuestatsarray);
 }
 
 
 
 void
 of12_endpoint::handle_group_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_group_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_group_stats_request& msg)
 {
 	// we need to get the statistics, build a packet and send it
 	unsigned int i;
@@ -544,12 +545,7 @@ of12_endpoint::handle_group_stats_request(
 
 	uint32_t group_id = msg.get_group_stats().get_group_id();
 	
-	if(group_id==openflow12::OFPG_ALL){
-		g_msg_all = hal_driver_of1x_get_group_all_stats(sw->dpid, group_id);
-	}
-	else{
-		g_msg_all = hal_driver_of1x_get_group_stats(sw->dpid, group_id);
-	}
+	g_msg_all = hal_driver_of1x_get_group_stats(sw->dpid, group_id);
 	
 	if(g_msg_all==NULL){
 		//TODO handle error
@@ -576,7 +572,7 @@ of12_endpoint::handle_group_stats_request(
 
 	try{
 		//Send the group stats
-		ctl.send_group_stats_reply(msg.get_xid(), groups);
+		ctl.send_group_stats_reply(auxid, msg.get_xid(), groups);
 	}catch(...){
 		of1x_destroy_stats_group_msg(g_msg_all);
 		throw;
@@ -590,53 +586,55 @@ of12_endpoint::handle_group_stats_request(
 
 void
 of12_endpoint::handle_group_desc_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_group_desc_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_group_desc_stats_request& msg)
 {
 	rofl::openflow::cofgroupdescstatsarray groupdescs(ctl.get_version());
 
-	of1x_group_table_t group_table;
-	of1x_group_t *group_it;
-	if(hal_driver_of1x_fetch_group_table(sw->dpid,&group_table)!=HAL_SUCCESS){
+	of1x_stats_group_desc_msg_t *grp_dsc, *group_it;
 
-		//TODO throw exeption
+	grp_dsc = hal_driver_of1x_get_group_desc_stats(sw->dpid);
+	if ( grp_dsc == NULL ){
+		return;
+		//TODO throw rofl::exeption
 	}
 	
-	for(group_it=group_table.head;group_it;group_it=group_it->next){
+	for(group_it=grp_dsc;group_it;group_it=group_it->next){
 		rofl::openflow::cofbuckets bclist(ctl.get_version());
-		of12_translation_utils::of12_map_reverse_bucket_list(bclist,group_it->bc_list);
+		of12_translation_utils::of12_map_reverse_bucket_list(bclist,group_it->bucket);
 
-		groupdescs.set_group_desc_stats(group_it->id).set_group_type(group_it->type);
-		groupdescs.set_group_desc_stats(group_it->id).set_group_id(group_it->id);
-		groupdescs.set_group_desc_stats(group_it->id).set_buckets(bclist);
+		groupdescs.set_group_desc_stats(group_it->group_id).set_group_type(group_it->type);
+		groupdescs.set_group_desc_stats(group_it->group_id).set_group_id(group_it->group_id);
+		groupdescs.set_group_desc_stats(group_it->group_id).set_buckets(bclist);
 	}
 
-	ctl.send_group_desc_stats_reply(msg.get_xid(), groupdescs);
+	of1x_destroy_group_desc_stats(grp_dsc);
+	ctl.send_group_desc_stats_reply(auxid, msg.get_xid(), groupdescs);
 }
 
 
 
 void
 of12_endpoint::handle_group_features_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_group_features_stats_request& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_group_features_stats_request& msg)
 {
 	rofl::openflow::cofgroup_features_stats_reply group_features_reply(ctl.get_version());
 
 	//TODO: fill in group_features_reply, when groups are implemented
 
-	ctl.send_group_features_stats_reply(msg.get_xid(), group_features_reply);
+	ctl.send_group_features_stats_reply(auxid, msg.get_xid(), group_features_reply);
 }
 
 
 
 void
 of12_endpoint::handle_experimenter_stats_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_experimenter_stats_request& pack,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_experimenter_stats_request& pack)
 {
 	//TODO: when exp are supported 
 }
@@ -645,9 +643,9 @@ of12_endpoint::handle_experimenter_stats_request(
 
 void
 of12_endpoint::handle_packet_out(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_packet_out& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_packet_out& msg)
 {
 	of1x_action_group_t* action_group = of1x_init_action_group(NULL);
 
@@ -667,7 +665,7 @@ of12_endpoint::handle_packet_out(
 							msg.get_buffer_id(),
 							msg.get_in_port(),
 							action_group,
-							msg.get_packet().soframe(), msg.get_packet().framelen())){
+							msg.get_packet().soframe(), msg.get_packet().length())){
 		// log error
 		//FIXME: send error
 	}
@@ -699,7 +697,8 @@ of12_endpoint::process_packet_in(
 
 		size_t len = (total_len < buf_len) ? total_len : buf_len;
 
-		send_packet_in_message(
+		rofl::crofbase::send_packet_in_message(
+				cauxid(0),
 				buffer_id,
 				total_len,
 				reason,
@@ -786,7 +785,7 @@ rofl_result_t of12_endpoint::notify_port_attached(const switch_port_snapshot_t* 
 		ofport.set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
 
 		//Send message
-		send_port_status_message(openflow12::OFPPR_ADD, ofport);
+		rofl::crofbase::send_port_status_message(cauxid(0), openflow12::OFPPR_ADD, ofport);
 	
 		return ROFL_SUCCESS;
 
@@ -821,7 +820,7 @@ rofl_result_t of12_endpoint::notify_port_detached(const switch_port_snapshot_t* 
 		ofport.set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
 
 		//Send message
-		send_port_status_message(openflow12::OFPPR_DELETE, ofport);
+		rofl::crofbase::send_port_status_message(cauxid(0), openflow12::OFPPR_DELETE, ofport);
 	
 		return ROFL_SUCCESS;
 
@@ -858,7 +857,7 @@ rofl_result_t of12_endpoint::notify_port_status_changed(const switch_port_snapsh
 		ofport.set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
 
 		//Send message
-		send_port_status_message(openflow12::OFPPR_MODIFY, ofport);
+		rofl::crofbase::send_port_status_message(cauxid(0), openflow12::OFPPR_MODIFY, ofport);
 
 		return ROFL_SUCCESS; // ignore this notification
 	
@@ -875,23 +874,23 @@ rofl_result_t of12_endpoint::notify_port_status_changed(const switch_port_snapsh
 
 void
 of12_endpoint::handle_barrier_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_barrier_request& pack,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_barrier_request& pack)
 {
 	//Since we are not queuing messages currently
-	ctl.send_barrier_reply(pack.get_xid());
+	ctl.send_barrier_reply(auxid, pack.get_xid());
 }
 
 
 
 void
 of12_endpoint::handle_flow_mod(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_flow_mod& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_flow_mod& msg)
 {
-	switch (msg.get_command()) {
+	switch (msg.get_flowmod().get_command()) {
 		case openflow12::OFPFC_ADD: {
 				flow_mod_add(ctl, msg);
 			} break;
@@ -913,7 +912,7 @@ of12_endpoint::handle_flow_mod(
 			} break;
 		
 		default:
-			throw eFlowModBadCommand();
+			throw rofl::eFlowModBadCommand();
 	}
 }
 
@@ -921,45 +920,45 @@ of12_endpoint::handle_flow_mod(
 
 void
 of12_endpoint::flow_mod_add(
-		crofctl& ctl,
+		rofl::crofctl& ctl,
 		rofl::openflow::cofmsg_flow_mod& msg)
 {
-	uint8_t table_id = msg.get_table_id();
+	uint8_t table_id = msg.get_flowmod().get_table_id();
 	hal_result_t res;
 	of1x_flow_entry_t *entry=NULL;
 
 	// sanity check: table for table-id must exist
 	if ( (table_id > sw->num_of_tables) && (table_id != openflow12::OFPTT_ALL) ){
 		rofl::logging::error << "[xdpd][of12][flow-mod-add] unable to add flow-mod due to " <<
-				"invalid table-id:" << msg.get_table_id() << " on dpt:" << sw->dpname << std::endl;
-		throw eFlowModBadTableId();
+				"invalid table-id:" << msg.get_flowmod().get_table_id() << " on dpt:" << sw->dpname << std::endl;
+		throw rofl::eFlowModBadTableId();
 	}
 
 	try{
 		entry = of12_translation_utils::of12_map_flow_entry(&ctl, &msg, sw);
 	}catch(...){
 		rofl::logging::error << "[xdpd][of12][flow-mod-add] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
-		throw eFlowModUnknown();
+		throw rofl::eFlowModUnknown();
 	}
 
 	if(!entry){
-		throw eFlowModUnknown();//Just for safety, but shall never reach this
+		throw rofl::eFlowModUnknown();//Just for safety, but shall never reach this
 	}
 
 	if (HAL_SUCCESS != (res = hal_driver_of1x_process_flow_mod_add(sw->dpid,
-								msg.get_table_id(),
+								msg.get_flowmod().get_table_id(),
 								&entry,
-								msg.get_buffer_id(),
-								msg.get_flags() & openflow12::OFPFF_CHECK_OVERLAP,
-								msg.get_flags() & openflow12::OFPFF_RESET_COUNTS))){
+								msg.get_flowmod().get_buffer_id(),
+								msg.get_flowmod().get_flags() & openflow12::OFPFF_CHECK_OVERLAP,
+								msg.get_flowmod().get_flags() & openflow12::OFPFF_RESET_COUNTS))){
 		// log error
 		rofl::logging::error << "[xdpd][of12][flow-mod-add] error inserting flow-mod on dpt:" << sw->dpname << std::endl;
 		of1x_destroy_flow_entry(entry);
 
 		if(res == HAL_FM_OVERLAP_FAILURE){
-			throw eFlowModOverlap();
+			throw rofl::eFlowModOverlap();
 		}else{
-			throw eFlowModTableFull();
+			throw rofl::eFlowModTableFull();
 		}
 	}
 }
@@ -968,29 +967,29 @@ of12_endpoint::flow_mod_add(
 
 void
 of12_endpoint::flow_mod_modify(
-		crofctl& ctl,
+		rofl::crofctl& ctl,
 		rofl::openflow::cofmsg_flow_mod& pack,
 		bool strict)
 {
 	of1x_flow_entry_t *entry=NULL;
 
 	// sanity check: table for table-id must exist
-	if (pack.get_table_id() > sw->num_of_tables)
+	if (pack.get_flowmod().get_table_id() > sw->num_of_tables)
 	{
 		rofl::logging::error << "[xdpd][of12][flow-mod-modify] unable to modify flow-mod due to " <<
-				"invalid table-id:" << pack.get_table_id() << " on dpt:" << sw->dpname << std::endl;
-		throw eFlowModBadTableId();
+				"invalid table-id:" << pack.get_flowmod().get_table_id() << " on dpt:" << sw->dpname << std::endl;
+		throw rofl::eFlowModBadTableId();
 	}
 
 	try{
 		entry = of12_translation_utils::of12_map_flow_entry(&ctl, &pack, sw);
 	}catch(...){
 		rofl::logging::error << "[xdpd][of12][flow-mod-modify] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
-		throw eFlowModUnknown();
+		throw rofl::eFlowModUnknown();
 	}
 
 	if(!entry){
-		throw eFlowModUnknown();//Just for safety, but shall never reach this
+		throw rofl::eFlowModUnknown();//Just for safety, but shall never reach this
 	}
 
 
@@ -998,15 +997,15 @@ of12_endpoint::flow_mod_modify(
 
 
 	if(HAL_SUCCESS != hal_driver_of1x_process_flow_mod_modify(sw->dpid,
-								pack.get_table_id(),
+								pack.get_flowmod().get_table_id(),
 								&entry,
-								pack.get_buffer_id(),
+								pack.get_flowmod().get_buffer_id(),
 								strictness,
-								pack.get_flags() & openflow12::OFPFF_RESET_COUNTS)){
+								pack.get_flowmod().get_flags() & openflow12::OFPFF_RESET_COUNTS)){
 		rofl::logging::error << "[xdpd][of12][flow-mod-modify] error modifying flow-mod on dpt:" << sw->dpname << std::endl;
 		of1x_destroy_flow_entry(entry);
 		
-		throw eFlowModBase(); 
+		throw rofl::eFlowModBase();
 	} 
 }
 
@@ -1014,7 +1013,7 @@ of12_endpoint::flow_mod_modify(
 
 void
 of12_endpoint::flow_mod_delete(
-		crofctl& ctl,
+		rofl::crofctl& ctl,
 		rofl::openflow::cofmsg_flow_mod& pack,
 		bool strict)
 {
@@ -1025,24 +1024,24 @@ of12_endpoint::flow_mod_delete(
 		entry = of12_translation_utils::of12_map_flow_entry(&ctl, &pack, sw);
 	}catch(...){
 		rofl::logging::error << "[xdpd][of12][flow-mod-delete] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
-		throw eFlowModUnknown();
+		throw rofl::eFlowModUnknown();
 	}
 
 	if(!entry)
-		throw eFlowModUnknown();//Just for safety, but shall never reach this
+		throw rofl::eFlowModUnknown();//Just for safety, but shall never reach this
 
 
 	of1x_flow_removal_strictness_t strictness = (strict) ? STRICT : NOT_STRICT;
 
 	if(HAL_SUCCESS != hal_driver_of1x_process_flow_mod_delete(sw->dpid,
-								pack.get_table_id(),
+								pack.get_flowmod().get_table_id(),
 								entry,
-								pack.get_out_port(),
-								pack.get_out_group(),
+								pack.get_flowmod().get_out_port(),
+								pack.get_flowmod().get_out_group(),
 								strictness)) {
 		rofl::logging::error << "[xdpd][of12][flow-mod-delete] error deleting flow-mod on dpt:" << sw->dpname << std::endl;
 		of1x_destroy_flow_entry(entry);
-		throw eFlowModBase(); 
+		throw rofl::eFlowModBase();
 	} 
 	
 	//Always delete entry
@@ -1068,7 +1067,8 @@ of12_endpoint::process_flow_removed(
 		//get duration of the flow mod
 		of1x_stats_flow_get_duration(entry, &sec, &nsec);
 
-		send_flow_removed_message(
+		rofl::crofbase::send_flow_removed_message(
+				cauxid(0),
 				match,
 				entry->cookie,
 				entry->priority,
@@ -1078,8 +1078,8 @@ of12_endpoint::process_flow_removed(
 				nsec,
 				entry->timer_info.idle_timeout,
 				entry->timer_info.hard_timeout,
-				entry->stats.packet_count,
-				entry->stats.byte_count);
+				entry->stats.s.counters.packet_count,
+				entry->stats.s.counters.byte_count);
 
 		return ROFL_SUCCESS;
 
@@ -1094,11 +1094,11 @@ of12_endpoint::process_flow_removed(
 
 void
 of12_endpoint::handle_group_mod(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_group_mod& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_group_mod& msg)
 {
-	//throw eNotImplemented(std::string("of12_endpoint::handle_group_mod()"));
+	//throw rofl::eNotImplemented(std::string("of12_endpoint::handle_group_mod()"));
 	//steps:
 	/* 1- map the packet
 	 * 2- check for errors
@@ -1116,7 +1116,7 @@ of12_endpoint::handle_group_mod(
 			switch (action.get_type()) {
 			case OFPAT_OUTPUT: {
 				if (be32toh(action.oac_output->port) == OFPP_ANY) {
-					throw eBadActionBadOutPort();
+					throw rofl::eBadActionBadOutPort();
 				}
 			} break;
 			default: {
@@ -1157,49 +1157,49 @@ of12_endpoint::handle_group_mod(
 		case ROFL_OF1X_GM_OK:
 			break;
 		case ROFL_OF1X_GM_EXISTS:
-			throw eGroupModExists();
+			throw rofl::eGroupModExists();
 			break;
 		case ROFL_OF1X_GM_INVAL:
-			throw eGroupModInvalGroup();
+			throw rofl::eGroupModInvalGroup();
 			break;
 		case ROFL_OF1X_GM_WEIGHT:
-			throw eGroupModWeightUnsupported();
+			throw rofl::eGroupModWeightUnsupported();
 			break;
 		case ROFL_OF1X_GM_OGRUPS:
-			throw eGroupModOutOfGroups();
+			throw rofl::eGroupModOutOfGroups();
 			break;
 		case ROFL_OF1X_GM_OBUCKETS:
-			throw eGroupModOutOfBuckets();
+			throw rofl::eGroupModOutOfBuckets();
 			break;
 		case ROFL_OF1X_GM_CHAIN:
-			throw eGroupModChainingUnsupported();
+			throw rofl::eGroupModChainingUnsupported();
 			break;
 		case ROFL_OF1X_GM_WATCH:
-			throw eGroupModWatchUnsupported();
+			throw rofl::eGroupModWatchUnsupported();
 			break;
 		case ROFL_OF1X_GM_LOOP:
-			throw eGroupModLoop();
+			throw rofl::eGroupModLoop();
 			break;
 		case ROFL_OF1X_GM_UNKGRP:
-			throw eGroupModUnknownGroup();
+			throw rofl::eGroupModUnknownGroup();
 			break;
 		case ROFL_OF1X_GM_CHNGRP:
-			throw eGroupModChainedGroup();
+			throw rofl::eGroupModChainedGroup();
 			break;
 		case ROFL_OF1X_GM_BTYPE:
-			throw eGroupModBadType();
+			throw rofl::eGroupModBadType();
 			break;
 		case ROFL_OF1X_GM_BCOMMAND:
-			throw eGroupModBadCommand();
+			throw rofl::eGroupModBadCommand();
 			break;
 		case ROFL_OF1X_GM_BBUCKET:
-			throw eGroupModBadBucket();
+			throw rofl::eGroupModBadBucket();
 			break;
 		case ROFL_OF1X_GM_BWATCH:
-			throw eGroupModBadWatch();
+			throw rofl::eGroupModBadWatch();
 			break;
 		case ROFL_OF1X_GM_EPERM:
-			throw eGroupModEperm();
+			throw rofl::eGroupModEperm();
 			break;
 		default:
 			/*Not a valid value - Log error*/
@@ -1211,9 +1211,9 @@ of12_endpoint::handle_group_mod(
 
 void
 of12_endpoint::handle_table_mod(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_table_mod& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_table_mod& msg)
 {
 
 	/*
@@ -1243,9 +1243,9 @@ of12_endpoint::handle_table_mod(
 
 void
 of12_endpoint::handle_port_mod(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_port_mod& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_port_mod& msg)
 {
 	uint32_t config, mask, advertise, port_num;
 
@@ -1257,36 +1257,36 @@ of12_endpoint::handle_port_mod(
 	//Check if port_num FLOOD
 	//TODO: Inspect if this is right. Spec does not clearly define if this should be supported or not
 	if( port_num == openflow12::OFPP_ALL )
-		throw ePortModBadPort(); 
+		throw rofl::ePortModBadPort();
 		
 	//Drop received
 	if( mask &  openflow12::OFPPC_NO_RECV )
 		if( HAL_FAILURE == hal_driver_of1x_set_port_drop_received_config(sw->dpid, port_num, config & openflow12::OFPPC_NO_RECV ) )
-			throw ePortModBase(); 
+			throw rofl::ePortModBase();
 	//No forward
 	if( mask &  openflow12::OFPPC_NO_FWD )
 		if( HAL_FAILURE == hal_driver_of1x_set_port_forward_config(sw->dpid, port_num, !(config & openflow12::OFPPC_NO_FWD) ) )
-			throw ePortModBase(); 
+			throw rofl::ePortModBase();
 	//No packet in
 	if( mask &  openflow12::OFPPC_NO_PACKET_IN )
 		if( HAL_FAILURE == hal_driver_of1x_set_port_generate_packet_in_config(sw->dpid, port_num, !(config & openflow12::OFPPC_NO_PACKET_IN) ) )
-			throw ePortModBase(); 
+			throw rofl::ePortModBase();
 
 	//Advertised
 	if( advertise )
 		if( HAL_FAILURE == hal_driver_of1x_set_port_advertise_config(sw->dpid, port_num, advertise)  )
-			throw ePortModBase(); 
+			throw rofl::ePortModBase();
 
 	//Port admin down //TODO: evaluate if we can directly call hal_driver_enable_port_by_num instead
 	if( mask &  openflow12::OFPPC_PORT_DOWN ){
 		if( (config & openflow12::OFPPC_PORT_DOWN)  ){
 			//Disable port
 			if( HAL_FAILURE == hal_driver_bring_port_down_by_num(sw->dpid, port_num) ){
-				throw ePortModBase(); 
+				throw rofl::ePortModBase();
 			}
 		}else{
 			if( HAL_FAILURE == hal_driver_bring_port_up_by_num(sw->dpid, port_num) ){
-				throw ePortModBase(); 
+				throw rofl::ePortModBase();
 			}
 		}
 	}
@@ -1294,10 +1294,10 @@ of12_endpoint::handle_port_mod(
 	/*
 	 * in case of an error, use one of these exceptions:
 	 */
-	throw ePortModBadAdvertise();
-	throw ePortModBadConfig();
-	throw ePortModBadHwAddr();
-	throw ePortModBadPort();
+	throw rofl::ePortModBadAdvertise();
+	throw rofl::ePortModBadConfig();
+	throw rofl::ePortModBadHwAddr();
+	throw rofl::ePortModBadPort();
 #endif
 }
 
@@ -1305,13 +1305,13 @@ of12_endpoint::handle_port_mod(
 
 void
 of12_endpoint::handle_set_config(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_set_config& msg,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_set_config& msg)
 {
 	//Instruct the driver to process the set config	
 	if(HAL_FAILURE == hal_driver_of1x_set_pipeline_config(sw->dpid, msg.get_flags(), msg.get_miss_send_len())){
-		throw eTableModBadConfig();
+		throw rofl::eSwitchConfigBadFlags();
 	}
 }
 
@@ -1319,24 +1319,24 @@ of12_endpoint::handle_set_config(
 
 void
 of12_endpoint::handle_queue_get_config_request(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_queue_get_config_request& pack,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_queue_get_config_request& pack)
 {
 	switch_port_snapshot_t* port;
 	unsigned int portnum = pack.get_port_no();
 
 	//FIXME: send error? => yes, if portnum is unknown, just throw the appropriate exception
 	if (0 /*add check for existence of port*/)
-		throw eBadRequestBadPort();
+		throw rofl::eBadRequestBadPort();
 
 	of1x_switch_snapshot_t* of12switch = (of1x_switch_snapshot_t*)hal_driver_get_switch_snapshot_by_dpid(sw->dpid);
 
 	if(!of12switch)
-		throw eRofBase();
+		throw rofl::eRofBase();
 
 
-	rofl::openflow::cofpacket_queue_list pql(ctl.get_version());
+	rofl::openflow::cofpacket_queues queues(ctl.get_version());
 
 	//we check all the positions in case there are empty slots
 	for(unsigned int n = 1; n < of12switch->max_ports; n++){
@@ -1355,32 +1355,26 @@ of12_endpoint::handle_queue_get_config_request(
 		for(unsigned int i=0; i<port->max_queues; i++){
 			if(!port->queues[i].set)
 				continue;
-
-			rofl::openflow::cofpacket_queue pq(ctl.get_version());
-			pq.set_queue_id(port->queues[i].id);
-			pq.set_port(port->of_port_num);
-			pq.get_queue_prop_list().next() = rofl::openflow::cofqueue_prop_min_rate(ctl.get_version(), port->queues[i].min_rate);
-			pq.get_queue_prop_list().next() = rofl::openflow::cofqueue_prop_max_rate(ctl.get_version(), port->queues[i].max_rate);
-			//fprintf(stderr, "min_rate: %d\n", port->queues[i].min_rate);
-			//fprintf(stderr, "max_rate: %d\n", port->queues[i].max_rate);
-
-			pql.next() = pq;
+			queues.set_pqueue(port->of_port_num, port->queues[i].id).set_queue_props().
+					add_queue_prop_min_rate().set_min_rate(port->queues[i].min_rate);
+			queues.set_pqueue(port->of_port_num, port->queues[i].id).set_queue_props().
+					add_queue_prop_max_rate().set_max_rate(port->queues[i].max_rate);
 		}
 	}
 
 	//Destroy the snapshot
 	of_switch_destroy_snapshot((of_switch_snapshot_t*)of12switch);
 		
-	ctl.send_queue_get_config_reply(pack.get_xid(), pack.get_port_no(), pql);
+	ctl.send_queue_get_config_reply(auxid, pack.get_xid(), pack.get_port_no(), queues);
 }
 
 
 
 void
 of12_endpoint::handle_experimenter_message(
-		crofctl& ctl,
-		rofl::openflow::cofmsg_experimenter& pack,
-		uint8_t aux_id)
+		rofl::crofctl& ctl,
+		const rofl::cauxid& auxid,
+		rofl::openflow::cofmsg_experimenter& pack)
 {
 	// TODO
 }
@@ -1388,17 +1382,19 @@ of12_endpoint::handle_experimenter_message(
 
 
 void
-of12_endpoint::handle_ctrl_open(crofctl *ctrl)
+of12_endpoint::handle_ctl_attached(crofctl *ctrl)
 {
-	ROFL_INFO("[sw: %s]Controller %s:%u is in CONNECTED state. \n", sw->dpname.c_str() , ctrl->get_peer_addr().c_str()); //FIXME: add role
+	std::stringstream sstr; sstr << ctrl->get_peer_addr();
+	ROFL_INFO("[sw: %s]Controller %s:%u is in CONNECTED state. \n", sw->dpname.c_str() , sstr.str().c_str()); //FIXME: add role
 }
 
 
 
 void
-of12_endpoint::handle_ctrl_close(crofctl *ctrl)
+of12_endpoint::handle_ctl_detached(crofctl *ctrl)
 {
-	ROFL_INFO("[sw: %s] Controller %s:%u has DISCONNECTED. \n", sw->dpname.c_str() ,ctrl->get_peer_addr().c_str()); //FIXME: add role
+	std::stringstream sstr; sstr << ctrl->get_peer_addr();
+	ROFL_INFO("[sw: %s] Controller %s:%u has DISCONNECTED. \n", sw->dpname.c_str() ,sstr.str().c_str()); //FIXME: add role
 
 }
 

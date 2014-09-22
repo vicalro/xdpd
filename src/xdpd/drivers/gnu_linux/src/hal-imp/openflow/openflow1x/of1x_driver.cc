@@ -292,6 +292,20 @@ hal_result_t hal_driver_of1x_process_packet_out(uint64_t dpid, uint32_t buffer_i
 		
 		//Mark as pkt out (ignore counters, slow path)	
 		TM_STAMP_PKT_OUT(pkt);
+
+		/*
+		 * remark: do not overwrite clas_state.calculate_checksums_in_sw, as these flags may
+		 * have been altered by previous tables in the pipeline. A simple reclassification
+		 * suppresses necessary recalculations for IPv4, UDP, TCP, etc.
+		 */
+
+		//Reclassify the packet
+		pktx86 = (datapacketx86*)pkt->platform_state;
+		//keep checksum_calculation flags
+		uint32_t calculate_checksums_in_sw = pktx86->clas_state.calculate_checksums_in_sw;
+		classify_packet(&pktx86->clas_state, pktx86->get_buffer(), pktx86->get_buffer_length(), in_port, 0);
+		pktx86->clas_state.calculate_checksums_in_sw |= calculate_checksums_in_sw;
+
 	}else{
 		//Retrieve a free buffer	
 		pkt = bufferpool::get_free_buffer_nonblocking();
@@ -305,18 +319,18 @@ hal_result_t hal_driver_of1x_process_packet_out(uint64_t dpid, uint32_t buffer_i
 		TM_STAMP_PKT_OUT(pkt);
 
 		//Initialize the packet and copy
-		((datapacketx86*)pkt->platform_state)->init(buffer, buffer_size, lsw, in_port, 0, true);
+		((datapacketx86*)pkt->platform_state)->init(buffer, buffer_size, lsw, true);
 		pkt->sw = lsw;
+
+		//Reclassify the packet
+		pktx86 = (datapacketx86*)pkt->platform_state;
+		classify_packet(&pktx86->clas_state, pktx86->get_buffer(), pktx86->get_buffer_length(), in_port, 0);
 	}
 	
-	//Reclassify the packet
-	pktx86 = (datapacketx86*)pkt->platform_state;
-	classify_packet(pktx86->headers, pktx86->get_buffer(), pktx86->get_buffer_length(), pktx86->in_port, 0);
-
 	ROFL_DEBUG_VERBOSE(DRIVER_NAME" Getting packet out [%p]\n",pkt);	
 	
 	//Instruct pipeline to process actions. This may reinject the packet	
-	of1x_process_packet_out_pipeline((of1x_switch_t*)lsw, pkt, action_group);
+	of1x_process_packet_out_pipeline(ROFL_PIPELINE_LOCKED_TID, (of1x_switch_t*)lsw, pkt, action_group);
 	
 	return HAL_SUCCESS;
 }
@@ -369,7 +383,7 @@ hal_result_t hal_driver_of1x_process_flow_mod_add(uint64_t dpid, uint8_t table_i
 			return HAL_FAILURE; //TODO: return really failure?
 		}
 
-		of_process_packet_pipeline((of_switch_t*)lsw,pkt);
+		of_process_packet_pipeline(ROFL_PIPELINE_LOCKED_TID, (of_switch_t*)lsw,pkt);
 	}
 
 
@@ -419,7 +433,7 @@ hal_result_t hal_driver_of1x_process_flow_mod_modify(uint64_t dpid, uint8_t tabl
 			return HAL_FAILURE; //TODO: return really failure?
 		}
 
-		of_process_packet_pipeline((of_switch_t*)lsw,pkt);
+		of_process_packet_pipeline(ROFL_PIPELINE_LOCKED_TID, (of_switch_t*)lsw,pkt);
 	}
 
 
@@ -604,25 +618,19 @@ rofl_of1x_gm_result_t hal_driver_of1x_group_mod_delete(uint64_t dpid, uint32_t i
 }
 
 /**
- * @name    hal_driver_of1x_group_search
- * @brief   Instructs driver to search the GROUP with identification ID
- * @ingroup of1x_driver_async_event_processing
- *
- * @param dpid 		Datapath ID of the switch to search the GROUP
+ * @ingroup core_of1x
+ * Retrieves a copy of the group and bucket structure
+ * @return of1x_stats_group_desc_msg_t instance that must be destroyed using of1x_destroy_group_desc_stats()
  */
-hal_result_t hal_driver_of1x_fetch_group_table(uint64_t dpid, of1x_group_table_t *group_table){
-	
+of1x_stats_group_desc_msg_t *hal_driver_of1x_get_group_desc_stats(uint64_t dpid){
 	of1x_switch_t* lsw = (of1x_switch_t*)physical_switch_get_logical_switch_by_dpid(dpid);
-		
+	
 	if(!lsw){
 		assert(0);
-		return HAL_FAILURE;
+		return NULL;
 	}
-
-	if(of1x_fetch_group_table(&lsw->pipeline,group_table)!=ROFL_SUCCESS)
-		return HAL_FAILURE;
 	
-	return HAL_SUCCESS;
+	return of1x_get_group_desc_stats(&lsw->pipeline);
 }
 
 /**
@@ -642,23 +650,4 @@ of1x_stats_group_msg_t * hal_driver_of1x_get_group_stats(uint64_t dpid, uint32_t
 	}
 
 	return of1x_get_group_stats(&lsw->pipeline,id);
-}
-
-/**
- * @name    hal_driver_of1x_get_group_all_stats
- * @brief   Instructs driver to fetch the GROUP statistics from all the groups
- * @ingroup of1x_driver_async_event_processing
- *
- * @param dpid 		Datapath ID of the switch where the GROUPS are
- */
-of1x_stats_group_msg_t * hal_driver_of1x_get_group_all_stats(uint64_t dpid, uint32_t id){
-	
-	of1x_switch_t* lsw = (of1x_switch_t*)physical_switch_get_logical_switch_by_dpid(dpid);
-	
-	if(!lsw){
-		assert(0);
-		return NULL;
-	}
-
-	return of1x_get_group_all_stats(&lsw->pipeline,id);
 }

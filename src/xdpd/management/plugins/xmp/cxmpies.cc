@@ -124,10 +124,22 @@ cxmpies::map_and_insert(
 		xmpmap[XMPIET_COMMAND] = new cxmpie_command(xmpie);
 	} break;
 	case XMPIET_PORTNAME: {
-		xmpmap[XMPIET_PORTNAME] = new cxmpie_portname(xmpie);
+		xmpmap[XMPIET_PORTNAME] = new cxmpie_name(xmpie);
 	} break;
 	case XMPIET_DPID: {
 		xmpmap[XMPIET_DPID] = new cxmpie_dpid(xmpie);
+	} break;
+	case XMPIET_PORTINFO: {
+		xmpmap[XMPIET_PORTINFO] = new cxmpie_portinfo(xmpie);
+	} break;
+	case XMPIET_MULTIPART: {
+		xmpmap[XMPIET_MULTIPART] = new cxmpie_multipart(xmpie);
+	} break;
+	case XMPIET_LSINAME: {
+		xmpmap[XMPIET_LSINAME] = new cxmpie_name(xmpie);
+	} break;
+	case XMPIET_LSIINFO: {
+		xmpmap[XMPIET_LSIINFO] = new cxmpie_lsiinfo(xmpie);
 	} break;
 	default: {
 		xmpmap[xmpie.get_type()] = new cxmpie(xmpie);
@@ -185,34 +197,34 @@ cxmpies::has_ie_command() const
 }
 
 
-cxmpie_portname&
+cxmpie_name&
 cxmpies::add_ie_portname()
 {
 	if (xmpmap.find(XMPIET_PORTNAME) != xmpmap.end()) {
 		delete xmpmap[XMPIET_PORTNAME];
 	}
-	xmpmap[XMPIET_PORTNAME] = new cxmpie_portname();
-	return *(dynamic_cast<cxmpie_portname*>( xmpmap[XMPIET_PORTNAME] ));
+	xmpmap[XMPIET_PORTNAME] = new cxmpie_name(XMPIET_PORTNAME);
+	return *(dynamic_cast<cxmpie_name*>( xmpmap[XMPIET_PORTNAME] ));
 }
 
 
-cxmpie_portname&
+cxmpie_name&
 cxmpies::set_ie_portname()
 {
 	if (xmpmap.find(XMPIET_PORTNAME) == xmpmap.end()) {
-		xmpmap[XMPIET_PORTNAME] = new cxmpie_portname();
+		xmpmap[XMPIET_PORTNAME] = new cxmpie_name(XMPIET_PORTNAME);
 	}
-	return *(dynamic_cast<cxmpie_portname*>( xmpmap[XMPIET_PORTNAME] ));
+	return *(dynamic_cast<cxmpie_name*>( xmpmap[XMPIET_PORTNAME] ));
 }
 
 
-cxmpie_portname const&
+cxmpie_name const&
 cxmpies::get_ie_portname() const
 {
 	if (xmpmap.find(XMPIET_PORTNAME) == xmpmap.end()) {
 		throw eXmpIEsNotFound();
 	}
-	return *(dynamic_cast<cxmpie_portname const*>( xmpmap.at(XMPIET_PORTNAME) ));
+	return *(dynamic_cast<cxmpie_name const*>( xmpmap.at(XMPIET_PORTNAME) ));
 }
 
 
@@ -231,6 +243,50 @@ bool
 cxmpies::has_ie_portname() const
 {
 	return (xmpmap.find(XMPIET_PORTNAME) != xmpmap.end());
+}
+
+cxmpie_portinfo&
+cxmpies::add_ie_portinfo()
+{
+	if (xmpmap.find(XMPIET_PORTINFO) != xmpmap.end()) {
+		delete xmpmap[XMPIET_PORTINFO];
+	}
+	xmpmap[XMPIET_PORTINFO] = new cxmpie_portinfo();
+	return *(dynamic_cast<cxmpie_portinfo*>(xmpmap[XMPIET_PORTINFO]));
+}
+
+cxmpie_portinfo&
+cxmpies::set_ie_portinfo()
+{
+	if (xmpmap.find(XMPIET_PORTINFO) == xmpmap.end()) {
+		xmpmap[XMPIET_PORTINFO] = new cxmpie_portinfo();
+	}
+	return *(dynamic_cast<cxmpie_portinfo*>(xmpmap[XMPIET_PORTINFO]));
+}
+
+cxmpie_portinfo const&
+cxmpies::get_ie_portinfo() const
+{
+	if (xmpmap.find(XMPIET_PORTINFO) == xmpmap.end()) {
+		throw eXmpIEsNotFound();
+	}
+	return *(dynamic_cast<cxmpie_portinfo const*>(xmpmap.at(XMPIET_PORTINFO)));
+}
+
+void
+cxmpies::drop_ie_portinfo()
+{
+	if (xmpmap.find(XMPIET_PORTINFO) == xmpmap.end()) {
+		return;
+	}
+	delete xmpmap[XMPIET_PORTINFO];
+	xmpmap.erase(XMPIET_PORTINFO);
+}
+
+bool
+cxmpies::has_ie_portinfo() const
+{
+	return (xmpmap.find(XMPIET_PORTINFO) != xmpmap.end());
 }
 
 
@@ -282,4 +338,131 @@ cxmpies::has_ie_dpid() const
 	return (xmpmap.find(XMPIET_DPID) != xmpmap.end());
 }
 
+cxmpie_name&
+cxmpies::add_ie_lsiname()
+{
+	if (xmpmap.find(XMPIET_LSINAME) != xmpmap.end()) {
+		delete xmpmap[XMPIET_LSINAME];
+	}
+	xmpmap[XMPIET_LSINAME] = new cxmpie_name(XMPIET_LSINAME);
+	return *(dynamic_cast<cxmpie_name*>( xmpmap[XMPIET_LSINAME] ));
+}
 
+cxmpie_name&
+cxmpies::set_ie_lsiname()
+{
+	if (xmpmap.find(XMPIET_LSINAME) == xmpmap.end()) {
+		xmpmap[XMPIET_LSINAME] = new cxmpie_name(XMPIET_LSINAME);
+	}
+	return *(dynamic_cast<cxmpie_name*>( xmpmap[XMPIET_LSINAME] ));
+}
+
+cxmpie_name const&
+cxmpies::get_ie_lsiname() const
+{
+	if (xmpmap.find(XMPIET_LSINAME) == xmpmap.end()) {
+		throw eXmpIEsNotFound();
+	}
+	return *(dynamic_cast<cxmpie_name const*>( xmpmap.at(XMPIET_LSINAME) ));
+}
+
+void
+cxmpies::drop_ie_lsiname()
+{
+	if (xmpmap.find(XMPIET_LSINAME) == xmpmap.end()) {
+		return;
+	}
+	delete xmpmap[XMPIET_LSINAME];
+	xmpmap.erase(XMPIET_LSINAME);
+}
+
+
+cxmpie_lsiinfo&
+cxmpies::add_ie_lsiinfo()
+{
+	if (xmpmap.find(XMPIET_LSIINFO) != xmpmap.end()) {
+		delete xmpmap[XMPIET_LSIINFO];
+	}
+	xmpmap[XMPIET_LSIINFO] = new cxmpie_lsiinfo();
+	return *(dynamic_cast<cxmpie_lsiinfo*>( xmpmap[XMPIET_LSIINFO] ));
+}
+
+cxmpie_lsiinfo&
+cxmpies::set_ie_lsiinfo()
+{
+	if (xmpmap.find(XMPIET_LSIINFO) == xmpmap.end()) {
+		xmpmap[XMPIET_LSIINFO] = new cxmpie_lsiinfo();
+	}
+	return *(dynamic_cast<cxmpie_lsiinfo*>( xmpmap[XMPIET_LSIINFO] ));
+}
+
+cxmpie_lsiinfo const&
+cxmpies::get_ie_lsiinfo() const
+{
+	if (xmpmap.find(XMPIET_LSIINFO) == xmpmap.end()) {
+		throw eXmpIEsNotFound();
+	}
+	return *(dynamic_cast<cxmpie_lsiinfo const*>( xmpmap.at(XMPIET_LSIINFO) ));
+}
+
+void
+cxmpies::drop_ie_lsiinfo()
+{
+	if (xmpmap.find(XMPIET_LSIINFO) == xmpmap.end()) {
+		return;
+	}
+	delete xmpmap[XMPIET_LSIINFO];
+	xmpmap.erase(XMPIET_LSIINFO);
+}
+
+
+bool
+cxmpies::has_ie_lsiname() const
+{
+	return (xmpmap.find(XMPIET_LSINAME) != xmpmap.end());
+}
+
+
+cxmpie_multipart&
+cxmpies::add_ie_multipart()
+{
+	if (xmpmap.find(XMPIET_MULTIPART) != xmpmap.end()) {
+		delete xmpmap[XMPIET_MULTIPART];
+	}
+	xmpmap[XMPIET_MULTIPART] = new cxmpie_multipart();
+	return *(dynamic_cast<cxmpie_multipart*>( xmpmap[XMPIET_MULTIPART] ));
+}
+
+cxmpie_multipart&
+cxmpies::set_ie_multipart()
+{
+	if (xmpmap.find(XMPIET_MULTIPART) == xmpmap.end()) {
+		xmpmap[XMPIET_MULTIPART] = new cxmpie_multipart();
+	}
+	return *(dynamic_cast<cxmpie_multipart*>( xmpmap[XMPIET_MULTIPART] ));
+}
+
+cxmpie_multipart const&
+cxmpies::get_ie_multipart() const
+{
+	if (xmpmap.find(XMPIET_MULTIPART) == xmpmap.end()) {
+		throw eXmpIEsNotFound();
+	}
+	return *(dynamic_cast<cxmpie_multipart const*>( xmpmap.at(XMPIET_MULTIPART) ));
+}
+
+void
+cxmpies::drop_ie_multipart()
+{
+	if (xmpmap.find(XMPIET_MULTIPART) == xmpmap.end()) {
+		return;
+	}
+	delete xmpmap[XMPIET_MULTIPART];
+	xmpmap.erase(XMPIET_MULTIPART);
+}
+
+bool
+cxmpies::has_ie_multipart() const
+{
+	return (xmpmap.find(XMPIET_MULTIPART) != xmpmap.end());
+}

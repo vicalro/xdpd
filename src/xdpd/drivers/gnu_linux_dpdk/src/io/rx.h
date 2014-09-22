@@ -43,7 +43,7 @@ namespace gnu_linux_dpdk {
 * Processes RX in a specific port. The function will process up to MAX_BURST_SIZE 
 */
 inline void
-process_port_rx(switch_port_t* port, unsigned int port_id, struct rte_mbuf** pkts_burst, datapacket_t* pkt, datapacket_dpdk_t* pkt_state){
+process_port_rx(unsigned int core_id, switch_port_t* port, unsigned int port_id, struct rte_mbuf** pkts_burst, datapacket_t* pkt, datapacket_dpdk_t* pkt_state){
 	
 	unsigned int i, burst_len;
 	of_switch_t* sw = port->attached_sw;
@@ -56,9 +56,8 @@ process_port_rx(switch_port_t* port, unsigned int port_id, struct rte_mbuf** pkt
 	//Read a burst
 	burst_len = rte_eth_rx_burst(port_id, 0, pkts_burst, IO_IFACE_MAX_PKT_BURST);
 
-	//XXX: statistics
 
-	//ROFL_DEBUG(DRIVER_NAME"[io] Read burst from %s (%u pkts)\n", port->name, burst_len);
+	//ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Read burst from %s (%u pkts)\n", port->name, burst_len);
 
 	//Prefetch
 	if( burst_len )
@@ -68,15 +67,21 @@ process_port_rx(switch_port_t* port, unsigned int port_id, struct rte_mbuf** pkt
 	//Process them 
 	for(i=0;i<burst_len;++i){
 		mbuf = pkts_burst[i];		
-	
+
+#ifdef DEBUG	
 		if(unlikely(sw == NULL)){
 			rte_pktmbuf_free(mbuf);
 			continue;
 		}
+#endif
 
 		//set mbuf pointer in the state so that it can be recovered afterwards when going
 		//out from the pipeline
 		pkt_state->mbuf = mbuf;
+
+		//Increment port RX statistics
+		port->stats.rx_packets++;
+		port->stats.rx_bytes += mbuf->pkt.pkt_len;
 
 #if DEBUG
 		//We only support nb_segs == 1. TODO: can it be that NICs send us pkts with more than one segment?
@@ -97,7 +102,7 @@ process_port_rx(switch_port_t* port, unsigned int port_id, struct rte_mbuf** pkt
 			rte_prefetch0(rte_pktmbuf_mtod(pkts_burst[i+1], void *));
 
 		//Send to process
-		of_process_packet_pipeline(sw, pkt);
+		of_process_packet_pipeline(core_id, sw, pkt);
 	}	
 }
 

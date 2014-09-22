@@ -43,7 +43,7 @@ using namespace xdpd::gnu_linux;
 #define GNU_LINUX_CODE_NAME "gnu-linux"
 #define GNU_LINUX_VERSION VERSION 
 #define GNU_LINUX_DESC \
-"GNU/Linux user-space driver.\n\nThe GNU/Linux driver is a user-space driver and serves as a reference implementation. It contains all the necessary bits and pieces to process packets in software, including a complete I/O subsystem written in C/C++. Access to network interfaces (NICs) is done via PACKET_MMAP.\n\nAlthough this driver does not provide cutting-edge performance, still provides a reasonable level of throughput\n\nFeatures:\n - Supports the following OpenFlow versions: v1.0, v1.2, v1.3.X\n - Supports multiple Logical Switch Instances (LSIs)\n - Supports virtual links between LSIs\n - Supports vast majority of network protocols defined by OpenFlow + extensions (GTP, PPP/PPPoE).\n\nMore details here:\n\nhttps://www.codebasin.net/redmine/projects/xdpd/wiki"
+"GNU/Linux user-space driver.\n\nThe GNU/Linux driver is a user-space driver and serves as a reference implementation. It contains all the necessary bits and pieces to process packets in software, including a complete I/O subsystem written in C/C++. Access to network interfaces (NICs) is done via PACKET_MMAP.\n\nAlthough this driver does not provide cutting-edge performance, still provides a reasonable level of throughput\n\nFeatures:\n - Supports the following OpenFlow versions: v1.0, v1.2, v1.3.X\n - Supports multiple Logical Switch Instances (LSIs)\n - Supports virtual links between LSIs\n - Supports vast majority of network protocols defined by OpenFlow + extensions (GTP, PPP/PPPoE).\n\nMore details here:\n\nhttp://www.xdpd.org"
 
 #define GNU_LINUX_USAGE  "" //We don't support extra params
 #define GNU_LINUX_EXTRA_PARAMS "" //We don't support extra params
@@ -435,31 +435,39 @@ hal_result_t hal_driver_detach_port_from_switch(uint64_t dpid, const char* name)
 	//Snapshoting the port *before* it is detached 
 	port_snapshot = physical_switch_get_port_snapshot(port->name); 
 	
-	if(!port_snapshot)
+	if(!port_snapshot){
+		assert(0);
 		return HAL_FAILURE;
+	}
 	
 	//Remove it from the iomanager (do not feed more packets)
 	if(iomanager::remove_port((ioport*)port->platform_port_state) != ROFL_SUCCESS){
 		ROFL_ERR(DRIVER_NAME" Error removing port %s from the iomanager. The port may become unusable...\n",port->name);
 		assert(0);
-		goto FWD_MODULE_DETACH_ERROR;	
+		goto DRIVER_DETACH_ERROR;	
 	}
 	
 	//Detach it
 	if(physical_switch_detach_port_from_logical_switch(port,lsw) != ROFL_SUCCESS){
 		ROFL_ERR(DRIVER_NAME" Error detaching port %s.\n",port->name);
 		assert(0);
-		goto FWD_MODULE_DETACH_ERROR;	
+		goto DRIVER_DETACH_ERROR;	
 	}
 	
 	//For virtual ports, remove counter port
 	if(port->type == PORT_TYPE_VIRTUAL){
+		//Snapshoting the port *before* it is detached 
+		port_snapshot = physical_switch_get_port_snapshot(port->name); 
+	
+		if(!port_snapshot)
+			return HAL_FAILURE;
+
 		switch_port_t* port_pair = get_vlink_pair(port); 
 
 		if(!port_pair){
 			ROFL_ERR(DRIVER_NAME" Error detaching a virtual link port. Could not find the counter port of %s.\n",port->name);
 			assert(0);
-			goto FWD_MODULE_DETACH_ERROR;
+			goto DRIVER_DETACH_ERROR;
 		}
 	
 		//Recover the snapshot *before* detachment 
@@ -469,18 +477,22 @@ hal_result_t hal_driver_detach_port_from_switch(uint64_t dpid, const char* name)
 		if(iomanager::remove_port((ioport*)port_pair->platform_port_state) != ROFL_SUCCESS){
 			ROFL_ERR(DRIVER_NAME" Error removing port %s from the iomanager. The port may become unusable...\n",port->name);
 			assert(0);
-			goto FWD_MODULE_DETACH_ERROR;
+			goto DRIVER_DETACH_ERROR;
 		}
 	
 		if(!port_pair->attached_sw || physical_switch_detach_port_from_logical_switch(port_pair,port_pair->attached_sw) != ROFL_SUCCESS){
 			ROFL_ERR(DRIVER_NAME" Error detaching port-pair %s from the sw.\n",port_pair->name);
 			assert(0);
-			goto FWD_MODULE_DETACH_ERROR;
+			goto DRIVER_DETACH_ERROR;
 		}
 
 		//notify port detached and deleted
 		hal_cmm_notify_port_delete(port_pair_snapshot);
 		
+		//Remove ioports
+		delete (ioport*)port->platform_port_state;
+		delete (ioport*)port_pair->platform_port_state;
+
 		//Remove from the pipeline and delete
 		if(physical_switch_remove_port(port->name) != ROFL_SUCCESS){
 			ROFL_ERR(DRIVER_NAME" Error removing port from the physical_switch. The port may become unusable...\n");
@@ -492,20 +504,20 @@ hal_result_t hal_driver_detach_port_from_switch(uint64_t dpid, const char* name)
 		if(physical_switch_remove_port(port_pair->name) != ROFL_SUCCESS){
 			ROFL_ERR(DRIVER_NAME" Error removing port from the physical_switch. The port may become unusable...\n");
 			assert(0);
-			goto FWD_MODULE_DETACH_ERROR;
+			goto DRIVER_DETACH_ERROR;
 			
 		}
 
-		delete (ioport*)port->platform_port_state;
-		delete (ioport*)port_pair->platform_port_state;
-	
 		//notify port detached and deleted
 		hal_cmm_notify_port_delete(port_snapshot);
+	}else{
+		//There was no notification so release
+		switch_port_destroy_snapshot(port_snapshot);
 	}
 	
 	return HAL_SUCCESS; 
 
-FWD_MODULE_DETACH_ERROR:
+DRIVER_DETACH_ERROR:
 
 	if(port_snapshot)
 		switch_port_destroy_snapshot(port_snapshot);	

@@ -266,6 +266,13 @@ hal_result_t hal_driver_of1x_process_packet_out(uint64_t dpid, uint32_t buffer_i
 		if(!pkt){
 			return HAL_FAILURE; /* TODO: add specific error */
 		}
+
+		//Reclassify the packet
+		datapacket_dpdk_t* pkt_dpdk = (datapacket_dpdk_t*)pkt->platform_state;
+		//keep checksum_calculation flags
+		uint32_t calculate_checksums_in_sw = pkt_dpdk->clas_state.calculate_checksums_in_sw;
+		classify_packet(&pkt_dpdk->clas_state, get_buffer_dpdk(pkt_dpdk), get_buffer_length_dpdk(pkt_dpdk), in_port, 0);
+		pkt_dpdk->clas_state.calculate_checksums_in_sw |= calculate_checksums_in_sw;
 	}else{
 		//Retrieve a free buffer	
 		pkt = bufferpool::get_free_buffer_nonblocking();
@@ -287,16 +294,17 @@ hal_result_t hal_driver_of1x_process_packet_out(uint64_t dpid, uint32_t buffer_i
 		
 		init_datapacket_dpdk(((datapacket_dpdk_t*)pkt->platform_state), mbuf, lsw, in_port, 0, true, true);
 		pkt->sw = lsw;
+
+		//Reclassify the packet
+		datapacket_dpdk_t* pkt_dpdk = (datapacket_dpdk_t*)pkt->platform_state;
+		classify_packet(&pkt_dpdk->clas_state, get_buffer_dpdk(pkt_dpdk), get_buffer_length_dpdk(pkt_dpdk), in_port, 0);
 	}
 
-	//Reclassify the packet
-	datapacket_dpdk_t* pkt_dpdk = (datapacket_dpdk_t*)pkt->platform_state;
-	classify_packet(pkt_dpdk->headers, get_buffer_dpdk(pkt_dpdk), get_buffer_length_dpdk(pkt_dpdk), in_port, 0);
 
 	ROFL_DEBUG_VERBOSE("Getting packet out [%p]\n",pkt);	
 	
 	//Instruct pipeline to process actions. This may reinject the packet	
-	of1x_process_packet_out_pipeline((of1x_switch_t*)lsw, pkt, action_group);
+	of1x_process_packet_out_pipeline(ROFL_PIPELINE_LOCKED_TID, (of1x_switch_t*)lsw, pkt, action_group);
 	
 	return HAL_SUCCESS;
 }
@@ -349,7 +357,7 @@ hal_result_t hal_driver_of1x_process_flow_mod_add(uint64_t dpid, uint8_t table_i
 			return HAL_FAILURE; //TODO: return really failure?
 		}
 
-		of_process_packet_pipeline((of_switch_t*)lsw,pkt);
+		of_process_packet_pipeline(ROFL_PIPELINE_LOCKED_TID, (of_switch_t*)lsw,pkt);
 	}
 
 
@@ -399,7 +407,7 @@ hal_result_t hal_driver_of1x_process_flow_mod_modify(uint64_t dpid, uint8_t tabl
 			return HAL_FAILURE; //TODO: return really failure?
 		}
 
-		of_process_packet_pipeline((of_switch_t*)lsw,pkt);
+		of_process_packet_pipeline(ROFL_PIPELINE_LOCKED_TID, (of_switch_t*)lsw,pkt);
 	}
 
 
@@ -575,26 +583,21 @@ rofl_of1x_gm_result_t hal_driver_of1x_group_mod_delete(uint64_t dpid, uint32_t i
 }
 
 /**
- * @name    hal_driver_of1x_group_search
- * @brief   Instructs driver to search the GROUP with identification ID
- * @ingroup of1x_driver_async_event_processing
- *
- * @param dpid 		Datapath ID of the switch to search the GROUP
+ * @ingroup core_of1x
+ * Retrieves a copy of the group and bucket structure
+ * @return of1x_stats_group_desc_msg_t instance that must be destroyed using of1x_destroy_group_desc_stats()
  */
-hal_result_t hal_driver_of1x_fetch_group_table(uint64_t dpid, of1x_group_table_t *group_table){
-		
+of1x_stats_group_desc_msg_t *hal_driver_of1x_get_group_desc_stats(uint64_t dpid){
 	of1x_switch_t* lsw = (of1x_switch_t*)physical_switch_get_logical_switch_by_dpid(dpid);
 	
 	if(!lsw){
 		assert(0);
-		return HAL_FAILURE;
+		return NULL;
 	}
 	
-	if(of1x_fetch_group_table(&lsw->pipeline,group_table)!=ROFL_SUCCESS)
-		return HAL_FAILURE;
-	
-	return HAL_SUCCESS;
+	return of1x_get_group_desc_stats(&lsw->pipeline);
 }
+
 /**
  * @name    hal_driver_of1x_get_group_stats
  * @brief   Instructs driver to fetch the GROUP statistics
@@ -612,23 +615,4 @@ of1x_stats_group_msg_t * hal_driver_of1x_get_group_stats(uint64_t dpid, uint32_t
 	}
 	
 	return of1x_get_group_stats(&lsw->pipeline,id);
-}
-
-/**
- * @name    hal_driver_of1x_get_group_all_stats
- * @brief   Instructs driver to fetch the GROUP statistics from all the groups
- * @ingroup of1x_driver_async_event_processing
- *
- * @param dpid 		Datapath ID of the switch where the GROUPS are
- */
-of1x_stats_group_msg_t * hal_driver_of1x_get_group_all_stats(uint64_t dpid, uint32_t id){
-		
-	of1x_switch_t* lsw = (of1x_switch_t*)physical_switch_get_logical_switch_by_dpid(dpid);
-
-	if(!lsw){
-		assert(0);
-		return NULL;
-	}
-
-	return of1x_get_group_all_stats(&lsw->pipeline,id);
 }

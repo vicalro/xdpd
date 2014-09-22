@@ -29,6 +29,11 @@
 #include <rofl/datapath/pipeline/openflow/of_switch.h>
 #include <rofl/datapath/pipeline/openflow/openflow1x/pipeline/of1x_flow_entry.h>
 
+//Snapshot
+#include "snapshots/switch_snapshot.h"
+#include "snapshots/flow_entry_snapshot.h"
+#include "snapshots/group_mod_snapshot.h"
+
 /**
 * @file switch_manager.h
 * @author Marc Sune<marc.sune (at) bisdn.de>
@@ -130,8 +135,26 @@ public:
 	/**
 	 * Return the dpid of the switch 
 	 */
-	static uint64_t get_switch_dpid(std::string& name);
+	static uint64_t get_switch_dpid(std::string const& name);
 
+	/**
+	* Get switch information (snapshot)
+	* @param snapshot Snapshot of the switch to be filled in. 
+	*/
+	static void get_switch_info(uint64_t dpid, openflow_switch_snapshot& snapshot);
+
+	/**
+	* Get list of switch table flow entries currently installed 
+	* @param flows List of flows installed. 
+	*/
+	static void get_switch_table_flows(uint64_t dpid, uint8_t table_id /*TODO: Add filtering */, std::list<flow_entry_snapshot>& flows);
+	
+	/**
+	* Get list of switch group table entries currently installed 
+	* @param flows List of group mods installed. 
+	*/
+	static void get_switch_group_mods(uint64_t dpid, std::list<openflow_group_mod_snapshot>& group_mods);
+	
 	/**
 	 * List available matching algorithms
 	 */
@@ -150,6 +173,18 @@ public:
 	 * disconnect from from controller
 	 */
 	static void rpc_disconnect_from_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
+
+	//
+	// Other configuration parameters
+	//
+
+	/**
+	* Change Packet In Rate Limiter(PIRL) rate, in packet_in events per second
+	*
+	* @param max_rate Maximum rate in pkt_in/s. It should be higher or equal than the minimum PIRL rate. Use pirl::PIRL_DISABLED to disable PIRL subsytem.
+	*/
+	static void reconfigure_pirl(uint64_t dpid, const int max_rate);
+
 
 	//
 	//CMM demux
@@ -182,9 +217,12 @@ private:
 	static openflow_switch* __get_switch_by_dpid(uint64_t dpid);	
 
 	//Default addresses
-	static const rofl::caddress controller_addr;
-	static const rofl::caddress binding_addr;
+	static const rofl::caddress_in4 controller_addr;
+	static const uint16_t controller_port;
+	static const rofl::caddress_in4 binding_addr;
+	static const uint16_t binding_port;
 
+	static pthread_mutex_t mutex;
 	static pthread_rwlock_t rwlock;
 
 };

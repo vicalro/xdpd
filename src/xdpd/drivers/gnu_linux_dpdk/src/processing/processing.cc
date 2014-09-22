@@ -199,7 +199,7 @@ int processing_core_process_packets(void* not_used){
 				port_id = ((dpdk_port_state_t*)port->platform_port_state)->port_id;
 
 				//Process RX&pipeline 
-				process_port_rx(port, port_id, pkt_burst, &pkt, pkt_state);
+				process_port_rx(core_id, port, port_id, pkt_burst, &pkt, pkt_state);
 			}
 		}
 	}
@@ -265,7 +265,7 @@ rofl_result_t processing_schedule_port(switch_port_t* port){
 	}
 
 	//FIXME: check if already scheduled
-	if( iface_manager_set_queues(current_core_index, port_state->port_id) != ROFL_SUCCESS){
+	if( iface_manager_set_queues(port, current_core_index, port_state->port_id) != ROFL_SUCCESS){
 		assert(0);
 		return ROFL_FAILURE;
 	}
@@ -330,13 +330,15 @@ rofl_result_t processing_deschedule_port(switch_port_t* port){
 
 	//This loop copies from descheduled port, all the rest of the ports
 	//one up, so that list of ports is contiguous (0...N-1)
-
-	for(i=(core_task->num_of_rx_ports-1); i > port_state->core_port_slot; i--)
-		core_task->port_list[i-1] = core_task->port_list[i];	
+	for(i=port_state->core_port_slot; i<core_task->num_of_rx_ports; i++){
+		core_task->port_list[i] = core_task->port_list[i+1];
+		if(core_task->port_list[i]){
+			((dpdk_port_state_t*)core_task->port_list[i]->platform_port_state)->core_port_slot = i;
+		}
+	}
 	
-	//Cleanup the last position
+	//Decrement counter
 	core_task->num_of_rx_ports--;
-	core_task->port_list[core_task->num_of_rx_ports] = NULL;
 
 	//There are no more ports, so simply stop core
 	if(core_task->num_of_rx_ports == 0){

@@ -29,7 +29,7 @@ rofl::cunixenv* system_manager::env_parser = NULL;
 const std::string system_manager::XDPD_CLOG_FILE="./xdpd.log";
 const std::string system_manager::XDPD_LOG_FILE="/var/log/xdpd.log";
 const std::string system_manager::XDPD_PID_FILE="/var/run/xdpd.pid";
-const unsigned int system_manager::XDPD_DEFAULT_DEBUG_LEVEL=5; //NOTICE
+const unsigned int system_manager::XDPD_DEFAULT_DEBUG_LEVEL=3; //ERROR
 
 const std::string system_manager::XDPD_TEST_RUN_OPT_FULL_NAME="test-config";
 const std::string system_manager::XDPD_EXTRA_PARAMS_OPT_FULL_NAME="extra-params";
@@ -216,7 +216,7 @@ void system_manager::init(int argc, char** argv){
 		rofl::logging::notice << "[xdpd][system_manager] Launched with -t "<< XDPD_TEST_RUN_OPT_FULL_NAME <<". Doing a test-run execution" << std::endl;
 
 	//Driver initialization
-	if(hal_driver_init(get_driver_extra_params().c_str()) != HAL_SUCCESS){
+	if(hal_driver_init(__get_driver_extra_params().c_str()) != HAL_SUCCESS){
 		ROFL_ERR("[xdpd][system_manager] ERROR: initialization of platform driver failed! Aborting...\n");	
 		exit(EXIT_FAILURE);
 	}
