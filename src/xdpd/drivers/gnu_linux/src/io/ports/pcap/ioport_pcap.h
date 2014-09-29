@@ -2,18 +2,23 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef IOPORT_PFRING_H
-#define IOPORT_PFRING_H 
+#ifndef IOPORT_PCAP_H
+#define IOPORT_PCAP_H 
 
+
+#include <linux/sockios.h>
+ 
 #include <string>
 
 #include <rofl.h>
 #include <rofl/datapath/pipeline/common/datapacket.h>
 #include <rofl/datapath/pipeline/switch_port.h>
-#include <rofl/common/cmacaddr.h>
+//#include <rofl/common/cmacaddr.h>
 
 #include "../ioport.h"
 #include "../../datapacketx86.h"
+
+#include <pcap.h>
 
  namespace xdpd {
  namespace gnu_linux {
@@ -25,6 +30,8 @@
 * @brief GNU/Linux interface access via pcap
 */
 
+#define PORT_ETHER_LENGTH 18
+#define PORT_DEFAULT_PKT_SIZE 1518
 
 class ioport_pcap : public ioport{
 
@@ -48,8 +55,12 @@ public:
 	// Get read fds. Return -1 if do not exist
 	inline virtual int
 	get_read_fd(void){
-		//FIXME
-		return -1;
+		
+		if (descr == NULL)
+			return -1;
+
+		return pcap_get_selectable_fd(descr);
+		
 	};
 
 	// Get write fds. Return -1 if do not exist
@@ -80,13 +91,12 @@ public:
 
 	private:
 
-		char errbuf[PCAP_ERRBUF_SIZE];
 		pcap_t* descr;
-		char *dev;
+		//char *dev;
 
 	};
 
 }// namespace xdpd::gnu_linux 
 }// namespace xdpd
 
-#endif /* IOPORT_PFRING_H_ */
+#endif /* IOPORT_PCAP_H_ */
