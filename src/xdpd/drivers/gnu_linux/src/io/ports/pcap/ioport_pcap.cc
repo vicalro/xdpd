@@ -31,30 +31,20 @@ using namespace rofl;
 using namespace xdpd::gnu_linux;
 
 
-// Constructor and destructor
+// Constructor
 ioport_pcap::ioport_pcap(switch_port_t* of_ps, unsigned int num_queues) : ioport(of_ps, num_queues)
 {
-
-	
-	/* grab a device to peak into... */
-	//dev = pcap_lookupdev(errbuf);
-	
-	//ROFL_INFO(DRIVER_NAME"[pcap] pcap dev: %s\n", of_port_state->name);
-
-	/* open the device for sniffing. */
 	descr = NULL;
-
 }
 
+//Destructor
 ioport_pcap::~ioport_pcap()
 {
 	pcap_close(descr);
 }
 
-
 //Read and write methods over port
 void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
-
 
 
 }
@@ -70,25 +60,17 @@ datapacket_t* ioport_pcap::read(){
 	datapacketx86 *pkt_x86;
 
 	//Check if we really have to read
-	if(!of_port_state->up || of_port_state->drop_received)
-		return NULL;
-	
-	//packet = pcap_next(descr,&pcap_hdr);
-
-	if(descr == NULL)
-		return NULL;
-	
-	/*
-	if( unlikely( (ret = pcap_next_ex(descr, &pcap_hdr, &packet)) < 1 ) ){
-		if(ret < 1)
-			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Error pcap_next_ex() < 1 %s\n", of_port_state->name, pcap_geterr(descr));
+	if(!of_port_state->up || of_port_state->drop_received){
 		return NULL;
 	}
-	ROFL_DEBUG(DRIVER_NAME"[pcap] pcap_next_ex() Packet received\n");
-	*/
+
+	//packet = pcap_next(descr,&pcap_hdr);
+	if(descr == NULL){
+		return NULL;
+	}
 
 	if((ret = pcap_next_ex(descr, &pcap_hdr, &packet)) < 1){
-		
+
 		if(ret == 0){
 			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_next_ex() = %i -> No packet read, timeout expired %s\n", of_port_state->name, ret, pcap_geterr(descr));
 			return NULL;
@@ -96,19 +78,20 @@ datapacket_t* ioport_pcap::read(){
 			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_next_ex() = %i -> Error reading %s\n", of_port_state->name, ret, pcap_geterr(descr));
 			return NULL;
 		}
-	
+
 	}
+
 	ROFL_DEBUG(DRIVER_NAME"[pcap] pcap_next_ex() Packet received\n");
 
 	//Retrieve buffer from pool: this is a non-blocking call
 	pkt = bufferpool::get_free_buffer_nonblocking();
 
 	//Handle no free buffer
-	if(!pkt) 
+	if(!pkt){
 		return NULL;
-	
-	pkt_x86 = (datapacketx86*) pkt->platform_state;
+	}
 
+	pkt_x86 = (datapacketx86*) pkt->platform_state;
 	pkt_x86->init((uint8_t*)packet, pcap_hdr->len, of_port_state->attached_sw, get_port_no(), 0);
 
 	return pkt;
@@ -116,14 +99,6 @@ datapacket_t* ioport_pcap::read(){
 }
 
 unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
-
-/*
-	const u_char *packet;
-	struct pcap_pkthdr pcap_hdr;     // pcap.h 
-	datapacket_t* pkt;
-	datapacketx86* pkt_x86;
-*/
-
 
 	return 0;
 
@@ -136,15 +111,15 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 */
 rofl_result_t ioport_pcap::up() {
 
-//#if 0
 	struct ifreq ifr;
 	int sd, rc;
 	struct ethtool_value eval;
 	char errbuf[PCAP_ERRBUF_SIZE];
-	int nonblock;
+	errbuf[0] = '\0';
+	int nonblock, status;
 
 	ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Trying to bring up\n",of_port_state->name);
-	
+
 	if ((sd = socket(AF_PACKET, SOCK_RAW, 0)) < 0){
 		return ROFL_FAILURE;
 	}
@@ -169,7 +144,7 @@ rofl_result_t ioport_pcap::up() {
 
 	if (ioctl(sd, SIOCETHTOOL, &ifr) < 0) {
 		ROFL_WARN(DRIVER_NAME"[pcap:%s] Unable to detect if the Generic Receive Offload (GRO) feature on the NIC is enabled or not. Please make sure it is disabled using ethtool or similar...\n", of_port_state->name);
-		
+
 	}else{
 		//Show nice messages in debug mode
 		if(eval.data == 0){
@@ -179,7 +154,7 @@ rofl_result_t ioport_pcap::up() {
 			eval.cmd = ETHTOOL_SGRO;
 			eval.data = 0;
 			ifr.ifr_data = (caddr_t)&eval;
-			
+
 			if (ioctl(sd, SIOCETHTOOL, &ifr) < 0) {
 				ROFL_ERR(DRIVER_NAME"[pcap:%s] Could not disable Generic Receive Offload feature on the NIC. This can be potentially dangeros...be advised!\n",  of_port_state->name);
 			}else{
@@ -206,63 +181,84 @@ rofl_result_t ioport_pcap::up() {
 			eval.data = (eval.data & ~ETH_FLAG_LRO);
 			ifr.ifr_data = (caddr_t)&eval;
 
-			if (ioctl(sd, SIOCETHTOOL, &ifr) < 0)
+			if (ioctl(sd, SIOCETHTOOL, &ifr) < 0){
 				ROFL_ERR(DRIVER_NAME"[pcap:%s] Could not disable Large Receive Offload (LRO) feature on the NIC. This can be potentially dangeros...be advised!\n",  of_port_state->name);
-			else
+			}else{
 				ROFL_DEBUG(DRIVER_NAME"[pcap:%s] LRO successfully disabled.\n", of_port_state->name);
+			}
 		}
 	}
 
 	//Recover MTU
 	memset((void*)&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, of_port_state->name, sizeof(ifr.ifr_name));
-	
+
 	if(ioctl(sd, SIOCGIFMTU, &ifr) < 0) {
 		ROFL_ERR(DRIVER_NAME"[pcap:%s] Could not retreive MTU value from NIC. Default %u Max Packet Size(MPS) size will be used (%u total bytes). Packets exceeding this size will be DROPPED (Jumbo frames).\n",  of_port_state->name, (PORT_DEFAULT_PKT_SIZE-PORT_ETHER_LENGTH), PORT_DEFAULT_PKT_SIZE);
-		mps = PORT_DEFAULT_PKT_SIZE;	
+		mps = PORT_DEFAULT_PKT_SIZE;
 	}else{
 		mps = ifr.ifr_mtu+PORT_ETHER_LENGTH;
 		ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Discovered Max Packet Size(MPS) of %u.\n",  of_port_state->name, mps);
 	}
 
 	//Recover flags
-	if ((rc = ioctl(sd, SIOCGIFFLAGS, &ifr)) < 0){ 
+	if ((rc = ioctl(sd, SIOCGIFFLAGS, &ifr)) < 0){
 		close(sd);
 		return ROFL_FAILURE;
 	}
-	
-	
+
+	//descr = pcap_open_live(of_port_state->name,BUFSIZ,1,-1,errbuf);
+	descr = pcap_create(of_port_state->name,errbuf);
+
+	if(descr == NULL){
+		ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_create() %s\n", errbuf);
+		assert(0);
+		return ROFL_FAILURE;
+	}
+
+	/*
+	if(pcap_set_buffer_size(descr,BUFSIZ) != 0)
+	ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_set_buffer_size() %s\n", errbuf);
+	*/
+	if(pcap_set_promisc(descr,1) != 0){
+		ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_set_promisc() %s\n", errbuf);
+	}
+	if(pcap_set_timeout(descr,0) != 0){
+		ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_set_timeout() %s\n", errbuf);
+	}
+
+	//TODO
+	//ifdef depending on libpcap version
+	if(pcap_set_immediate_mode(descr,1) != 0)
+		ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_set_immediate_mode() %s\n", errbuf);
+
+	//Set state as up
+	of_port_state->up = true;
+
 	//Check if is up or not
 	if (IFF_UP & ifr.ifr_flags){
-		
-		if(descr == NULL){
 
-			//descr = pcap_open_live(of_port_state->name,BUFSIZ,1,-1,errbuf);
-			descr = pcap_open_live(of_port_state->name,BUFSIZ,1,-1,errbuf);
+		//Activate and non block
+		status = pcap_activate(descr);
+		if (status != 0){
+			ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_activate() with status %i %s\n", status, pcap_geterr(descr));
+			assert(0);
+			return ROFL_FAILURE;
+		}
 
-			if(descr == NULL){
-				ROFL_ERR(DRIVER_NAME"[pcap] Error opening descr %s\n", errbuf);
-				assert(0);
-				return ROFL_FAILURE;
-			}
+		//Set non-blocking
+		nonblock = pcap_setnonblock(descr,1,errbuf);
 
-			nonblock = pcap_setnonblock(descr, 1, errbuf);
-
-			if(nonblock != 0){
-				ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_setnonblock()\n");
-				return ROFL_FAILURE;
-			}
+		if(nonblock != 0){
+			ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_setnonblock()\n");
+			return ROFL_FAILURE;
 		}
 
 		//Already up.. Silently skip
 		close(sd);
-
-		of_port_state->up = true;
 		return ROFL_SUCCESS;
 	}
 
-	of_port_state->up = true;
-	
 	//Prevent race conditions with LINK/STATUS notification threads (bg)
 	pthread_rwlock_wrlock(&rwlock);
 
@@ -273,34 +269,33 @@ rofl_result_t ioport_pcap::up() {
 		pthread_rwlock_unlock(&rwlock);
 		return ROFL_FAILURE;
 	}
-	
-	descr = pcap_open_live(of_port_state->name,BUFSIZ,1,-1,errbuf);
 
-	if(descr == NULL){
-		ROFL_ERR(DRIVER_NAME"[pcap] Error opening descr %s\n", errbuf);
+	//Release mutex
+	pthread_rwlock_unlock(&rwlock);
+
+	//Activate and non block
+	status = pcap_activate(descr);
+	if (status != 0){
+		ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_activate() with status %i %s\n", status, pcap_geterr(descr));
 		assert(0);
 		return ROFL_FAILURE;
 	}
-	
-	nonblock = pcap_setnonblock(descr, 1, errbuf);
+
+	//Set non-blocking
+	nonblock = pcap_setnonblock(descr,1,errbuf);
 
 	if(nonblock != 0){
 		ROFL_ERR(DRIVER_NAME"[pcap] Error pcap_setnonblock()\n");
 		return ROFL_FAILURE;
 	}
-
-	//Release mutex		
-	pthread_rwlock_unlock(&rwlock);
-
 	close(sd);
 
-//#endif
 	return ROFL_SUCCESS;
 
 }
 
 rofl_result_t ioport_pcap::down() {
-	
+
 	struct ifreq ifr;
 	int sd, rc;
 
@@ -323,7 +318,7 @@ rofl_result_t ioport_pcap::down() {
 	}
 
 	of_port_state->up = false;
-	
+
 	if ( !(IFF_UP & ifr.ifr_flags) ) {
 		close(sd);
 		//Already down.. Silently skip
@@ -342,7 +337,7 @@ rofl_result_t ioport_pcap::down() {
 		return ROFL_FAILURE;
 	}
 
-	//Release mutex		
+	//Release mutex
 	pthread_rwlock_unlock(&rwlock);
 
 	close(sd);
