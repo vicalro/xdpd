@@ -4,6 +4,8 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+#AM_INIT_AUTOMAKE([-Wall foreign])
+
 AC_GNU_SOURCE
 
 AC_PROG_INSTALL
@@ -72,5 +74,7 @@ AC_CONFIG_FILES([
 	test/unit/io/packet_classifiers/c_pktclassifier/Makefile
 	test/unit/io/packet_classifiers/c_pktclassifier/headers/Makefile
 ])
+
+AC_CHECK_LIB(pcap,pcap_set_immediate_mode,[AC_DEFINE(PCAP_SET_IMMEDIATE_MODE)],)
 
 AC_OUTPUT
