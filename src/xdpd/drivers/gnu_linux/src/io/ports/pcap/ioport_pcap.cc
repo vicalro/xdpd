@@ -46,7 +46,81 @@ ioport_pcap::~ioport_pcap()
 //Read and write methods over port
 void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 
+	const char c='a';
+	int ret;
+	unsigned int len;
+	
+	datapacketx86* pkt_x86 = (datapacketx86*) pkt->platform_state;
+	len = pkt_x86->get_buffer_length();
 
+	if ( likely(of_port_state->up) && 
+		likely(of_port_state->forward_packets) &&
+		likely(len >= MIN_PKT_LEN) ) {
+
+		//Safe check for q_id
+		if( unlikely(q_id >= get_num_of_queues()) ){
+			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Packet(%p) trying to be enqueued in an invalid q_id: %u\n",  of_port_state->name, pkt, q_id);
+			q_id = 0;
+			bufferpool::release_buffer(pkt);
+			assert(0);
+		}
+	
+		//Store on queue and exit. This is NOT copying it to the pcap buffer
+		if(output_queues[q_id]->non_blocking_write(pkt) != ROFL_SUCCESS){
+			TM_STAMP_STAGE(pkt, TM_SA5_FAILURE);
+			
+			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Packet(%p) dropped. Congestion in output queue: %d\n",  of_port_state->name, pkt, q_id);
+			//Drop packet
+			bufferpool::release_buffer(pkt);
+
+#ifndef IO_KERN_DONOT_CHANGE_SCHED
+			//Force descheduling (prioritize TX)
+			sched_yield();	
+#endif
+			return;
+		}
+		TM_STAMP_STAGE(pkt, TM_SA5_SUCCESS);
+
+		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] Packet(%p) enqueued, buffer size: %d\n",  of_port_state->name, pkt, output_queues[q_id]->size());
+	
+		//WRITE to pipe
+		ret = ::write(notify_pipe[WRITE],&c,sizeof(c));
+		(void)ret; // todo use the value
+	} else {
+		if(len < MIN_PKT_LEN){
+			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR: attempt to send invalid packet size for packet(%p) scheduled for queue %u. Packet size: %u\n", of_port_state->name, pkt, q_id, len);
+			assert(0);
+		}else{
+			ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] dropped packet(%p) scheduled for queue %u\n", of_port_state->name, pkt, q_id);
+		}
+
+		//Drop packet
+		bufferpool::release_buffer(pkt);
+	}
+
+}
+
+inline void ioport_pcap::empty_pipe(){
+	int ret;
+
+	if(unlikely(deferred_drain == 0))
+		return;
+
+	//Just take deferred_drain from the pipe 
+	if(deferred_drain > IO_IFACE_RING_SLOTS)	
+		ret = ::read(notify_pipe[READ], draining_buffer, IO_IFACE_RING_SLOTS);
+	else
+		ret = ::read(notify_pipe[READ], draining_buffer, deferred_drain);
+	
+
+	if(ret > 0){
+		deferred_drain -= ret;
+		
+		if(unlikely( deferred_drain< 0 ) ){
+			assert(0); //Desynchronized
+			deferred_drain = 0;
+		}
+	}
 }
 
 // handle read
@@ -88,11 +162,16 @@ datapacket_t* ioport_pcap::read(){
 
 	//Handle no free buffer
 	if(!pkt){
+		of_port_state->stats.rx_dropped++;		
 		return NULL;
 	}
 
 	pkt_x86 = (datapacketx86*) pkt->platform_state;
 	pkt_x86->init((uint8_t*)packet, pcap_hdr->len, of_port_state->attached_sw, get_port_no(), 0);
+
+	//Increment statistics&return
+	of_port_state->stats.rx_packets++;
+	of_port_state->stats.rx_bytes += pkt_x86->get_buffer_length();
 
 	return pkt;
 
@@ -100,11 +179,12 @@ datapacket_t* ioport_pcap::read(){
 
 unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 
-#if 0
-	const u_char *packet;
-	struct pcap_pkthdr *pcap_hdr;     
+	const u_char *packet = NULL;
+	struct pcap_pkthdr *pcap_hdr = NULL;     
 	datapacket_t *pkt;
 	datapacketx86 *pkt_x86;
+	unsigned int cnt = 0;
+	int tx_bytes_local = 0;
 
 	circular_queue<datapacket_t>* queue = output_queues[q_id];
 
@@ -121,11 +201,11 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 		}
 
 		//Retrieve an empty slot in the TX ring
-		packet = tx->get_free_slot();
+		//hdr = tx->get_free_slot();
 
 		//Skip, TX is full
-		if(!packet)
-			break;
+		//if(!hdr)
+		//	break;
 		
 		//Retrieve the buffer
 		pkt = queue->non_blocking_read();
@@ -159,14 +239,19 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 			deferred_drain++;
 			continue;
 		}else{	
-			fill_tx_slot(packet, pkt_x86);
+			//fill_tx_slot(hdr, pkt_x86);
+			uint8_t *data = ((uint8_t *) packet);
+			memcpy(data, pkt_x86->get_buffer(), pkt_x86->get_buffer_length());
+
+			pcap_hdr->len = pkt_x86->get_buffer_length();
+			//pcap_hdr->snaplen = pkt_x86->get_buffer_length();
+			 
 		}
 		
 		TM_STAMP_STAGE(pkt, TM_SA7);
 		
 		//Return buffer to the pool
 		bufferpool::release_buffer(pkt);
-
 
 		//tx_bytes_local += hdr->tp_len;
 		cnt++;
@@ -175,25 +260,27 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 	
 	//Increment stats and return
 	if (likely(cnt > 0)) {
-		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be send\n", __FUNCTION__, cnt);
+		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be sent\n", __FUNCTION__, cnt);
 
 		// send packets in TX
-		if(unlikely(tx->send() != ROFL_SUCCESS)){
+		//if(unlikely(tx->send() != ROFL_SUCCESS)){
+   		if (pcap_inject(descr,pkt,sizeof(pkt))==-1){ 
 			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets. This is due very likely to an invalid ETH_TYPE value. Now the port will be reset in order to continue operation\n", of_port_state->name);
 			assert(0);
 			of_port_state->stats.tx_errors += cnt;
 			of_port_state->queues[q_id].stats.overrun += cnt;
-			
+		
 
 			/*
 			* We need to reset the port, meaning destroy and regenerate both TX rings
 			* Disabling and enabling the port to accomplish so.
 			*/
+			/*
 			if(tx){
 				delete tx;
 				tx = new pcap_tx(std::string(of_port_state->name), block_size, n_blocks, frame_size); 
 			}	
-			
+			*/
 			
 			//Making sure fds are regenerated by manually incrementing pg hash	
 			portgroup_state* pg = iomanager::get_group(iomanager::get_group_id_by_port((ioport*)this, PG_TX));
@@ -219,8 +306,7 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 
 	// return not used buckets
 	return num_of_buckets;
-#endif
-	return 0;
+
 }
 
 /*
