@@ -33,6 +33,7 @@
 #define PORT_ETHER_LENGTH 18
 #define PORT_DEFAULT_PKT_SIZE 1518
 
+
 class ioport_pcap : public ioport{
 
 
@@ -92,7 +93,29 @@ public:
 	private:
 
 		pcap_t* descr;
-		//char *dev;
+		
+		//Minimum frame size (ethernet header size)
+		static const unsigned int MIN_PKT_LEN=14;
+
+		//parameters for regenerating tx/rx
+		int block_size;
+		int n_blocks;
+		int frame_size;
+		int deferred_drain;
+
+		//Pipe used to
+		int notify_pipe[2];
+	
+		//Used to drain the pipe
+		char draining_buffer[IO_IFACE_RING_SLOTS];
+	
+		//Pipe extremes
+		static const unsigned int READ=0;
+		static const unsigned int WRITE=1;
+
+		//void fill_vlan_pkt(struct tpacket2_hdr *hdr, datapacketx86 *pkt_x86);
+		//void fill_tx_slot(const u_char *pcap_packet, datapacketx86 *packet);
+		void empty_pipe(void);
 
 	};
 
