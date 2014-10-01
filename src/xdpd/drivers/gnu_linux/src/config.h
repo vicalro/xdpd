@@ -64,6 +64,14 @@
 //Warning: changing the size of this variable can have ARNING:
 #define IO_BUFFERPOOL_CAPACITY 2048*16 //32K buffers
 
+
+//Undefine this to use MMAP instead of PCAP
+#define IO_IFACE_USE_PCAP
+
+/* PCAP related config*/
+//Nothing here
+
+/* MMAP related I/O config */
 //Max frame size (WARNING: do not go beyond 8192 bytes, and never underneath 2048 bytes)
 //Align to a power of 2
 #define IO_IFACE_MMAP_FRAME_SIZE 2048
