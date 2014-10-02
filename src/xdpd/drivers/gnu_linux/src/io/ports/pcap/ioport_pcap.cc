@@ -251,19 +251,19 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 
 	//Increment stats and return
 	if (likely(cnt > 0)) {
+
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be sent\n", __FUNCTION__, cnt);
 		int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		// send packets in TX
 		//if(unlikely(tx->send() != ROFL_SUCCESS)){
-   		if (sent == -1){
+   	if (sent == -1){
+
 			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets.\n", of_port_state->name);
 			assert(0);
 			of_port_state->stats.tx_errors += cnt;
 			of_port_state->queues[q_id].stats.overrun += cnt;
 
 		}
-
-		ROFL_DEBUG(DRIVER_NAME"[pcap]*** Sent %i bytes ***\n", sent);
 
 		//Increment statistics
 		of_port_state->stats.tx_packets += cnt;

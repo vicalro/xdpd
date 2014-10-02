@@ -66,7 +66,7 @@ public:
 
 	// Get write fds. Return -1 if do not exist
 	inline virtual int get_write_fd(void){
-		//FIXME
+		
 		return notify_pipe[READ];
 	};
 
