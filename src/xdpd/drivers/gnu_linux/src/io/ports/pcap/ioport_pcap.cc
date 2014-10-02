@@ -32,12 +32,26 @@ using namespace xdpd::gnu_linux;
 ioport_pcap::ioport_pcap(switch_port_t* of_ps, unsigned int num_queues) : ioport(of_ps, num_queues)
 {
 	descr = NULL;
+
+	int rc;
+
+	//Open pipe for output signaling on enqueue
+	rc = pipe(notify_pipe);
+	(void)rc; // todo use the value
+
+	//Set non-blocking read/write in the pipe
+	for(unsigned int i=0;i<2;i++){
+		int flags = fcntl(notify_pipe[i], F_GETFL, 0);	///get current file status flags
+		flags |= O_NONBLOCK;				//turn off blocking flag
+		fcntl(notify_pipe[i], F_SETFL, flags);		//set up non-blocking read
+	}
 }
 
 //Destructor
 ioport_pcap::~ioport_pcap()
 {
-	pcap_close(descr);
+	if(descr != NULL)
+		pcap_close(descr);
 }
 
 //Read and write methods over port

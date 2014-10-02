@@ -19,6 +19,7 @@
 #include "../../datapacketx86.h"
 
 #include <pcap.h>
+#include <fcntl.h>
 
  namespace xdpd {
  namespace gnu_linux {
@@ -66,7 +67,7 @@ public:
 
 	// Get write fds. Return -1 if do not exist
 	inline virtual int get_write_fd(void){
-		
+
 		return notify_pipe[READ];
 	};
 
