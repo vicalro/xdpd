@@ -3,11 +3,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef IOPORT_PCAP_H
-#define IOPORT_PCAP_H 
+#define IOPORT_PCAP_H
 
 
 #include <linux/sockios.h>
- 
+
 #include <string>
 
 #include <rofl.h>
@@ -56,18 +56,18 @@ public:
 	// Get read fds. Return -1 if do not exist
 	inline virtual int
 	get_read_fd(void){
-		
+
 		if (descr == NULL)
 			return -1;
 
 		return pcap_get_selectable_fd(descr);
-		
+
 	};
 
 	// Get write fds. Return -1 if do not exist
 	inline virtual int get_write_fd(void){
 		//FIXME
-		return -1;
+		return notify_pipe[READ];
 	};
 
 	unsigned int get_port_no() {
@@ -93,7 +93,7 @@ public:
 	private:
 
 		pcap_t* descr;
-		
+
 		//Minimum frame size (ethernet header size)
 		static const unsigned int MIN_PKT_LEN=14;
 
@@ -105,10 +105,10 @@ public:
 
 		//Pipe used to
 		int notify_pipe[2];
-	
+
 		//Used to drain the pipe
 		char draining_buffer[IO_IFACE_RING_SLOTS];
-	
+
 		//Pipe extremes
 		static const unsigned int READ=0;
 		static const unsigned int WRITE=1;
@@ -119,7 +119,7 @@ public:
 
 	};
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 #endif /* IOPORT_PCAP_H_ */
