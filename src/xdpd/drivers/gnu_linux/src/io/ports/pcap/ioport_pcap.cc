@@ -263,7 +263,7 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 
 		}
 
-		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] *** Sent %i bytes ***\n", sent),
+		ROFL_DEBUG(DRIVER_NAME"[pcap]*** Sent %i bytes ***\n", sent);
 
 		//Increment statistics
 		of_port_state->stats.tx_packets += cnt;
