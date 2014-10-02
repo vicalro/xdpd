@@ -65,7 +65,7 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 
 		//Store on queue and exit. This is NOT copying it to the pcap buffer
 		if(output_queues[q_id]->non_blocking_write(pkt) != ROFL_SUCCESS){
-			TM_STAMP_STAGE(pkt, TM_SA5_FAILURE);
+			//TM_STAMP_STAGE(pkt, TM_SA5_FAILURE);
 
 			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Packet(%p) dropped. Congestion in output queue: %d\n",  of_port_state->name, pkt, q_id);
 			//Drop packet
@@ -77,7 +77,7 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 #endif
 			return;
 		}
-		TM_STAMP_STAGE(pkt, TM_SA5_SUCCESS);
+		//TM_STAMP_STAGE(pkt, TM_SA5_SUCCESS);
 
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] Packet(%p) enqueued, buffer size: %d\n",  of_port_state->name, pkt, output_queues[q_id]->size());
 
@@ -252,16 +252,18 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 	//Increment stats and return
 	if (likely(cnt > 0)) {
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be sent\n", __FUNCTION__, cnt);
-
+		int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		// send packets in TX
 		//if(unlikely(tx->send() != ROFL_SUCCESS)){
-   		if (pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length())==-1){
+   		if (sent == -1){
 			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets.\n", of_port_state->name);
 			assert(0);
 			of_port_state->stats.tx_errors += cnt;
 			of_port_state->queues[q_id].stats.overrun += cnt;
 
 		}
+
+		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] *** Sent %i bytes ***\n", sent),
 
 		//Increment statistics
 		of_port_state->stats.tx_packets += cnt;
