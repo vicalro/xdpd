@@ -360,7 +360,6 @@ unsigned int ioport_mmap::write(unsigned int q_id, unsigned int num_of_buckets){
 		//Return buffer to the pool
 		bufferpool::release_buffer(pkt);
 
-
 		tx_bytes_local += hdr->tp_len;
 		cnt++;
 		deferred_drain++;
