@@ -58,8 +58,7 @@ ioport_pcap::~ioport_pcap()
 void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 {
 
-	const char c='a';
-	int ret;
+
 	unsigned int len;
 
 	datapacketx86* pkt_x86 = (datapacketx86*) pkt->platform_state;
@@ -76,7 +75,7 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 			bufferpool::release_buffer(pkt);
 			assert(0);
 		}
-
+#ifndef IO_PCAP_BYPASS_TX
 		//Store on queue and exit. This is NOT copying it to the pcap buffer
 		if(output_queues[q_id]->non_blocking_write(pkt) != ROFL_SUCCESS){
 			//TM_STAMP_STAGE(pkt, TM_SA5_FAILURE);
@@ -88,7 +87,7 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 #ifndef IO_KERN_DONOT_CHANGE_SCHED
 			//Force descheduling (prioritize TX)
 			sched_yield();
-#endif
+#endif //IO_KERN_DONOT_CHANGE_SCHED
 			return;
 		}
 		//TM_STAMP_STAGE(pkt, TM_SA5_SUCCESS);
@@ -96,8 +95,14 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] Packet(%p) enqueued, buffer size: %d\n",  of_port_state->name, pkt, output_queues[q_id]->size());
 
 		//WRITE to pipe
+		const char c='a';
+		int ret;
 		ret = ::write(notify_pipe[WRITE],&c,sizeof(c));
 		(void)ret; // todo use the value
+#else
+		pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+#endif //IO_PCAP_BYPASS_TX
+
 	} else {
 
 		if(len < MIN_PKT_LEN){
@@ -159,7 +164,7 @@ datapacket_t* ioport_pcap::read(){
 	if((ret = pcap_next_ex(descr, &pcap_hdr, &packet)) < 1){
 
 		if(ret == 0){
-			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_next_ex() = %i -> No packet read, timeout expired %s\n", of_port_state->name, ret, pcap_geterr(descr));
+			//ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] pcap_next_ex() = %i -> No packet read, timeout expired %s\n", of_port_state->name, ret, pcap_geterr(descr));
 			return NULL;
 		}else if (ret == -1){
 			ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_next_ex() = %i -> Error reading %s\n", of_port_state->name, ret, pcap_geterr(descr));
@@ -267,12 +272,13 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 	if (likely(cnt > 0)) {
 
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be sent\n", __FUNCTION__, cnt);
-		int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		//int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		int sent = pcap_sendpacket(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		// send packets in TX
 		//if(unlikely(tx->send() != ROFL_SUCCESS)){
    	if (sent == -1){
 
-			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets.\n", of_port_state->name);
+			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets: %s. Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
 			assert(0);
 			of_port_state->stats.tx_errors += cnt;
 			of_port_state->queues[q_id].stats.overrun += cnt;

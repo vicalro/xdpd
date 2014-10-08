@@ -3,16 +3,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef EPOLL_IOSCHEDULER_H
-#define EPOLL_IOSCHEDULER_H 
+#define EPOLL_IOSCHEDULER_H
 
 #include <stdlib.h>
 #include <sys/epoll.h>
-#include <pthread.h> 
-#include <vector> 
-#include <iostream> 
+#include <pthread.h>
+#include <vector>
+#include <iostream>
 #include <sys/syscall.h>
 #include <errno.h>
-#include "ioscheduler.h" 
+#include "ioscheduler.h"
 #include "../iomanager.h"
 #include "../bufferpool.h"
 #include "../ports/ioport.h"
@@ -58,14 +58,14 @@ typedef struct epoll_event_data{
 * way I/O threads go through the ports for TX and RX.
 *
 * @ingroup driver_gnu_linux_io_schedulers
-* 
+*
 * @description Implements a simple I/O scheduler based on async epoll
 * events.
-* 
+*
 * It uses a weighted round-robin approach to implement
 * scheduling policy.
 */
-class epoll_ioscheduler: public ioscheduler{ 
+class epoll_ioscheduler: public ioscheduler{
 
 public:
 	//Main method inherited from ioscheduler
@@ -80,16 +80,16 @@ protected:
 	//READing buckets
 	static const unsigned int READ_BUCKETS_PP=4;
 
-	//WRITing buckets	
+	//WRITing buckets
 	static const unsigned int WRITE_BUCKETS_PP=4;
-	static const float WRITE_QOS_QUEUE_FACTOR[ioport::MAX_OUTPUT_QUEUES];
-
+	//static const float WRITE_QOS_QUEUE_FACTOR[ioport::MAX_OUTPUT_QUEUES];
+  static const float WRITE_QOS_QUEUE_FACTOR[IO_MAX_OUTPUT_QUEUES];
 	/* Methods */
 	//WRR
 	static inline bool process_port_rx(unsigned int tid, ioport* port);
 	static inline int process_port_tx(ioport* port);
 
-	//EPOLL related	
+	//EPOLL related
 	static void release_resources(int epfd, struct epoll_event* ev, struct epoll_event* events, unsigned int current_num_of_ports);
 	static void add_fd_epoll(struct epoll_event* ev, int epfd, ioport* port, int fd);
 	static void init_or_update_fds(portgroup_state* pg, safevector<ioport*>& ports, int* epfd, struct epoll_event** ev, struct epoll_event** events, unsigned int* current_num_of_ports, unsigned int* current_hash, bool rx);
@@ -102,9 +102,9 @@ protected:
 #ifdef DEBUG
 public:
 	//Method to by-pass processing systems.
-	static void set_by_pass_processing(bool value){by_pass_processing=value;};	
+	static void set_by_pass_processing(bool value){by_pass_processing=value;};
 private:
-	static bool by_pass_processing;	
+	static bool by_pass_processing;
 #endif
 
 
@@ -113,27 +113,27 @@ private:
 //Inline functions and templates
 
 /*
-* Call port based on scheduling algorithm 
+* Call port based on scheduling algorithm
 */
 inline bool epoll_ioscheduler::process_port_rx(unsigned tid, ioport* port){
 
 	unsigned int i;
 	datapacket_t* pkt;
 	of_switch_t* sw;
-	
+
 	if(unlikely(!port) || unlikely(!port->of_port_state) || unlikely(!port->of_port_state->attached_sw))
 		return false;
 
 	sw = port->of_port_state->attached_sw;
-	
+
 	//Perform up_to n_buckets_read
 	ROFL_DEBUG_VERBOSE(DRIVER_NAME" Trying to read at port %s with %d\n", port->of_port_state->name, READ_BUCKETS_PP);
-	
+
 	for(i=0; i<READ_BUCKETS_PP; ++i){
 
 		//Attempt to read (non-blocking)
 		pkt = port->read();
-		
+
 		if(likely(pkt != NULL)){
 
 #ifdef DEBUG
@@ -149,7 +149,7 @@ inline bool epoll_ioscheduler::process_port_rx(unsigned tid, ioport* port){
 				//Process it through the pipeline
 				TM_STAMP_STAGE(pkt, TM_S3);
 				of_process_packet_pipeline(tid, sw, pkt);
-					
+
 #ifdef DEBUG
 			}
 #endif
@@ -158,12 +158,12 @@ inline bool epoll_ioscheduler::process_port_rx(unsigned tid, ioport* port){
 			break;
 		}
 	}
-	
+
 	return i==(READ_BUCKETS_PP);
 }
 
 inline int epoll_ioscheduler::process_port_tx(ioport* port){
-	
+
 	unsigned int q_id;
 	unsigned int n_buckets;
 	int tx_packets=0;
@@ -177,17 +177,17 @@ inline int epoll_ioscheduler::process_port_tx(ioport* port){
 		//Fas pre-check (avoid virtual function call overhead)
 		if(port->output_queue_has_packets(q_id) == false)
 			continue;
-		
+
 		//Increment number of buckets
 		n_buckets = WRITE_BUCKETS_PP*WRITE_QOS_QUEUE_FACTOR[q_id];
 
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[%s] Trying to write at port queue: %d with n_buckets: %d.\n", port->of_port_state->name, q_id, n_buckets);
-		
-		//Perform up to n_buckets write	
+
+		//Perform up to n_buckets write
 		tx_packets += n_buckets - port->write(q_id, n_buckets);
 	}
-	
-	return tx_packets; 
+
+	return tx_packets;
 }
 
 template<bool is_rx>
@@ -201,7 +201,7 @@ void* epoll_ioscheduler::process_io(void* grp){
 	ioport* port;
 	safevector<ioport*> ports;	//Ports of the group currently performing I/O operations
 	unsigned int tid;
-	
+
 	//Init epoll fd set
 	epfd = -1;
 	init_or_update_fds(pg, ports, &epfd, &ev, &events, &current_num_of_ports, &current_hash, is_rx);
@@ -230,19 +230,19 @@ void* epoll_ioscheduler::process_io(void* grp){
 
 		//Wait for events or TIMEOUT_MS
 		res = epoll_wait(epfd, events, current_num_of_ports, EPOLL_TIMEOUT_MS);
-		
+
 		if(unlikely(res == -1)){
 			//This can occur when interfaces are removed from the system
 		}else{
 
 			if(res == 0){
 				//Timeout
-			}else{	
-				ROFL_DEBUG_VERBOSE(DRIVER_NAME"[epoll_ioscheduler] Got %d events\n", res); 
+			}else{
+				ROFL_DEBUG_VERBOSE(DRIVER_NAME"[epoll_ioscheduler] Got %d events\n", res);
 				for(i=0; i<res; ++i){
-					
+
 					port = ((epoll_event_data_t*)events[i].data.ptr)->port;
-					
+
 					if(is_rx)
 						epoll_ioscheduler::process_port_rx(tid, port);
 					else
@@ -251,7 +251,7 @@ void* epoll_ioscheduler::process_io(void* grp){
 			}
 		}
 
-		//Check for updates in the running ports 
+		//Check for updates in the running ports
 		if( unlikely(pg->running_hash != current_hash) )
 			init_or_update_fds(pg, ports, &epfd, &ev, &events, &current_num_of_ports, &current_hash, is_rx);
 	}
@@ -265,7 +265,7 @@ void* epoll_ioscheduler::process_io(void* grp){
 	pthread_exit(NULL);
 }
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 #endif /* EPOLL_IOSCHEDULER_H_ */

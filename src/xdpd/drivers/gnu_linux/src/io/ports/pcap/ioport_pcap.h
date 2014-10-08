@@ -67,8 +67,12 @@ public:
 
 	// Get write fds. Return -1 if do not exist
 	inline virtual int get_write_fd(void){
-
-		return notify_pipe[READ];
+    //we can return -1 since theres only one queue now
+#ifdef IO_PCAP_BYPASS_TX
+  return -1;
+#else
+  return notify_pipe[READ];
+#endif
 	};
 
 	unsigned int get_port_no() {
