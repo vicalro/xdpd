@@ -25,3 +25,12 @@ COMPILER_ASSERT(INVALID_processing_input_queue_slots, (PROCESSING_INPUT_QUEUE_SL
 //COMPILER_ASSERT(INVALID_processing_input_queue_slots_align_power_2, (PROCESSING_INPUT_QUEUE_SLOTS % 2 == 0) );
 COMPILER_ASSERT(INVALID_processing_pkt_in_queue_slots, (PROCESSING_PKT_IN_QUEUE_SLOTS >= 4) );
 //COMPILER_ASSERT(INVALID_processing_pkt_in_queue_slots_align_power_2, (PROCESSING_PKT_IN_QUEUE_SLOTS % 2 == 0) );
+
+#ifdef IO_IFACE_USE_PCAP
+  #ifdef IO_PCAP_BYPASS_TX
+    //We inject directly in the enqueue_packet function and only need 1 queue
+    COMPILER_ASSERT(INVALID_io_iface_num_queues, (IO_IFACE_NUM_QUEUES == 1) );
+  #endif
+#endif
+
+COMPILER_ASSERT(INVALID_io_max_output_queues, (IO_MAX_OUTPUT_QUEUES < IO_IFACE_NUM_QUEUES) );
