@@ -101,6 +101,8 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 		(void)ret; // todo use the value
 #else
 		pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		bufferpool::release_buffer(pkt);
+
 #endif //IO_PCAP_BYPASS_TX
 
 	} else {
@@ -185,7 +187,12 @@ datapacket_t* ioport_pcap::read(){
 	}
 
 	pkt_x86 = (datapacketx86*) pkt->platform_state;
+
+#ifndef IO_PCAP_BYPASS_TX
 	pkt_x86->init((uint8_t*)packet, pcap_hdr->len, of_port_state->attached_sw, get_port_no(), 0);
+#else
+ pkt_x86->init((uint8_t*)packet, pcap_hdr->len, of_port_state->attached_sw, get_port_no(), 0, true, false);
+#endif
 
 	//Increment statistics&return
 	of_port_state->stats.rx_packets++;
