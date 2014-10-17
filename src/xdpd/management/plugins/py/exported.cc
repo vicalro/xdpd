@@ -24,5 +24,5 @@ std::string xdpd::py_proxy::port_manager::get_vlink_pair(std::string& port_name)
 }
 std::set<std::string> xdpd::py_proxy::port_manager::list_available_port_names(bool include_blacklisted){
 	fprintf(stderr,"Hey");
-        return port_manager::list_available_port_names(include_blacklisted);
+        return xdpd::port_manager::list_available_port_names(include_blacklisted);
 }

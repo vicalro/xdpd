@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <rofl/datapath/pipeline/common/datapacket.h>
+#include <rofl/datapath/pipeline/common/protocol_constants.h>
 #include "../pktclassifier.h"
 
 //Headers
@@ -28,6 +29,7 @@
 #include "./headers/cpc_udp.h"
 #include "./headers/cpc_sctp.h"
 #include "./headers/cpc_vlan.h"
+#include "./headers/cpc_gre.h"
 
 #include "autogen_pkt_types.h"
 
@@ -51,7 +53,8 @@ enum calculate_checksum {
 	RECALCULATE_UDP_CHECKSUM_IN_SW		= 3,
 	RECALCULATE_SCTP_CHECKSUM_IN_SW		= 4,
 	RECALCULATE_ICMPV4_CHECKSUM_IN_SW	= 5,
-	RECALCULATE_ICMPV6_CHECKSUM_IN_SW	= 6
+	RECALCULATE_ICMPV6_CHECKSUM_IN_SW	= 6,
+	RECALCULATE_GRE_CHECKSUM_IN_SW		= 7
 };
 
 /**
@@ -264,8 +267,25 @@ void* get_ppp_hdr(classifier_state_t* clas_state, int idx){
 static inline
 void* get_gtpu_hdr(classifier_state_t* clas_state, int idx){
 	uint8_t* tmp;
-	PT_GET_HDR(tmp, clas_state, PT_PROTO_GTPU); 
-	return tmp;
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_GTPU4);
+	if (tmp != NULL)
+		return tmp;
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_GTPU6);
+	if (tmp != NULL)
+		return tmp;
+	return NULL;
+}
+
+static inline
+void* get_gre_hdr(classifier_state_t* clas_state, int idx){
+	uint8_t* tmp;
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_GRE4);
+	if (tmp != NULL)
+		return tmp;
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_GRE6);
+	if (tmp != NULL)
+		return tmp;
+	return NULL;
 }
 
 //
@@ -280,11 +300,19 @@ void parse_tcp(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
 
 static inline
 void parse_gtp(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
-
+	uint8_t* tmp;
 	if (unlikely(datalen < sizeof(cpc_gtphu_t))) { return; }
-	PT_CLASS_ADD_PROTO(clas_state, GTPU);
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_IPV4);
+	if(tmp != NULL) {
+		PT_CLASS_ADD_PROTO(clas_state, GTPU4); return;
+	}
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_IPV6);
+	if (tmp != NULL) {
+		PT_CLASS_ADD_PROTO(clas_state, GTPU6); return;
+	}
 	//No further parsing
 }
+
 static inline
 void parse_udp(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
 
@@ -313,6 +341,21 @@ void parse_udp(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
 static inline
 void parse_sctp(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
 	PT_CLASS_ADD_PROTO(clas_state, SCTP);
+	//No further parsing
+}
+
+static inline
+void parse_gre(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
+	uint8_t* tmp;
+	if (unlikely(datalen < sizeof(cpc_gre_base_hdr_t))) { return; }
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_IPV4);
+	if(tmp != NULL) {
+		PT_CLASS_ADD_PROTO(clas_state, GRE4); return;
+	}
+	PT_GET_HDR(tmp, clas_state, PT_PROTO_IPV6);
+	if (tmp != NULL) {
+		PT_CLASS_ADD_PROTO(clas_state, GRE6); return;
+	}
 	//No further parsing
 }
 
@@ -367,6 +410,9 @@ void parse_ipv4(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
 			break;
 		case SCTP_IP_PROTO:
 			parse_sctp(clas_state, data, datalen);
+			break;
+		case GRE_IP_PROTO:
+			parse_gre(clas_state, data, datalen);
 			break;
 		default:
 			break;
@@ -524,6 +570,9 @@ void parse_ipv6(classifier_state_t* clas_state, uint8_t *data, size_t datalen){
 			break;
 		case SCTP_IP_PROTO:
 			parse_sctp(clas_state, data, datalen);
+			break;
+		case GRE_IP_PROTO:
+			parse_gre(clas_state, data, datalen);
 			break;
 		default:
 			break;

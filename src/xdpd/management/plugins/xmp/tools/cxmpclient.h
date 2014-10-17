@@ -77,6 +77,22 @@ public:
 	void
 	lsi_list();
 
+	void
+	lsi_info();
+
+	void
+	lsi_create(uint64_t dpid, std::string const& lsi_name, const std::list<class xdpd::mgmt::protocol::controller>& controller);
+
+	void
+	lsi_destroy(const uint64_t dpid);
+
+	void
+	lsi_connect_to_controller(uint64_t dpid, const std::list<class xdpd::mgmt::protocol::controller>& controller);
+
+
+	void
+	lsi_cross_connect(const uint64_t dpid1, const uint64_t dpid2);
+
 	/**
 	 *
 	 */
@@ -109,6 +125,9 @@ public:
 	handle_reply(cxmpmsg& msg);
 
 	void
+	handle_error(cxmpmsg& msg);
+
+	void
 	register_observer(cxmpobserver *observer);
 
 	bool
@@ -125,6 +144,12 @@ public:
 
 	void
 	terminate_client();
+
+	bool
+	is_established() const
+	{
+		return socket->is_established();
+	}
 
 protected:
 
@@ -165,6 +190,9 @@ protected:
 
 	void
 	handle_send();
+
+	void
+	send_message(cxmpmsg &msg);
 };
 
 }; // end of namespace protocol

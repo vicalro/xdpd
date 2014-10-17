@@ -69,6 +69,9 @@ ADD_PLUGIN(rest)
 #PY
 ADD_PLUGIN(py)
 
+#node_orchestrator
+ADD_PLUGIN(node_orchestrator)
+
 #Example
 ADD_PLUGIN(example)
 

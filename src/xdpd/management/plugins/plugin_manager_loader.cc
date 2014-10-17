@@ -33,9 +33,15 @@ using namespace xdpd;
 #ifdef WITH_MGMT_REST
 	#include "rest/rest.h"
 #endif
+
 #ifdef WITH_MGMT_PY
 	#include "py/py.h"
 #endif
+
+#ifdef WITH_MGMT_NODE_ORCHESTRATOR
+	#include "node_orchestrator/node_orchestrator.h"
+#endif
+
 //Add more here [+]...
 
 //
@@ -67,6 +73,11 @@ void plugin_manager::pre_init(){
 	#ifdef WITH_MGMT_PY
 		//Register py plugin
 		register_plugin(new py());	
+	#endif
+
+	#ifdef WITH_MGMT_NODE_ORCHESTRATOR
+		//Register NODE_ORCHESTRATOR
+		register_plugin(new NodeOrchestrator());
 	#endif
 
 	//Generally the example should be the last one...
