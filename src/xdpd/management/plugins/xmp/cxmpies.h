@@ -24,6 +24,7 @@ extern "C" {
 #include "cxmpie_portinfo.h"
 #include "cxmpie_dpid.h"
 #include "cxmpie_lsiinfo.h"
+#include "cxmpie_controller.h"
 #include "cxmpie_multipart.h"
 #include "xdpd_mgmt_protocol.h"
 #include "rofl/common/croflexception.h"
@@ -42,15 +43,15 @@ class cxmpies
 
 public: // iterators
 
-	typedef typename std::map<uint16_t, cxmpie*>::iterator iterator;
-	typedef typename std::map<uint16_t, cxmpie*>::const_iterator const_iterator;
+	typedef std::map<uint16_t, cxmpie*>::iterator iterator;
+	typedef std::map<uint16_t, cxmpie*>::const_iterator const_iterator;
 	iterator begin() { return xmpmap.begin(); }
 	iterator end() { return xmpmap.end(); }
 	const_iterator begin() const { return xmpmap.begin(); }
 	const_iterator end() const { return xmpmap.end(); }
 
-	typedef typename std::map<uint16_t, cxmpie*>::reverse_iterator reverse_iterator;
-	typedef typename std::map<uint16_t, cxmpie*>::const_reverse_iterator const_reverse_iterator;
+	typedef std::map<uint16_t, cxmpie*>::reverse_iterator reverse_iterator;
+	typedef std::map<uint16_t, cxmpie*>::const_reverse_iterator const_reverse_iterator;
 	reverse_iterator rbegin() { return xmpmap.rbegin(); }
 	reverse_iterator rend() { return xmpmap.rend(); }
 
@@ -236,6 +237,24 @@ public:
 	has_ie_lsiinfo() const;
 
 	/*
+	 * information element: controller
+	 */
+	cxmpie_controller&
+	add_ie_controller();
+
+	cxmpie_controller&
+	set_ie_controller();
+
+	cxmpie_controller const&
+	get_ie_controller() const;
+
+	void
+	drop_ie_controller();
+
+	bool
+	has_ie_controller() const;
+
+	/*
 	 * information element: multipart
 	 */
 	cxmpie_multipart&
@@ -292,6 +311,9 @@ public:
 			} break;
 			case XMPIET_LSIINFO: {
 				os << "  " << dynamic_cast<cxmpie_lsiinfo const&>( *(it->second) );
+			} break;
+			case XMPIET_CONTROLLER: {
+				os << "  " << dynamic_cast<cxmpie_controller const&>( *(it->second) );
 			} break;
 			default: {
 				os << "  " << *(it->second);

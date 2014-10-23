@@ -16,7 +16,7 @@ using namespace libconfig;
 #define DRIVER_EXTRA_PARAMS_FULL "config.system.driver-extra-params"
 
 
-system_scope::system_scope(std::string name, bool mandatory):scope(name, mandatory){
+system_scope::system_scope(scope* parent):scope("system", parent, false){
 	
 	//Register parameters
 	register_parameter(ID);
@@ -71,7 +71,7 @@ void system_scope::post_validate(libconfig::Setting& setting, bool dry_run){
 		//Set logging
 		try{
 			system_manager::set_logging_debug_level(logging_level);
-		}catch(eSystemLogLevelSetviaCL& e){
+		}catch(eSystemLogLevelSetviaCLI& e){
 			//Ignore. Trace is already printed by system_manager
 		}
 		

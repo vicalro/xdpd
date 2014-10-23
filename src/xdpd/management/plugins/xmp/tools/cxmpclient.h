@@ -81,10 +81,17 @@ public:
 	lsi_info();
 
 	void
-	lsi_create(uint64_t dpid, std::string const& lsi_name);
+	lsi_create(uint64_t dpid, std::string const& lsi_name, const std::list<class xdpd::mgmt::protocol::controller>& controller);
 
 	void
 	lsi_destroy(const uint64_t dpid);
+
+	void
+	lsi_connect_to_controller(uint64_t dpid, const std::list<class xdpd::mgmt::protocol::controller>& controller);
+
+
+	void
+	lsi_cross_connect(const uint64_t dpid1, const uint64_t dpid2);
 
 	/**
 	 *
@@ -137,6 +144,12 @@ public:
 
 	void
 	terminate_client();
+
+	bool
+	is_established() const
+	{
+		return socket->is_established();
+	}
 
 protected:
 

@@ -20,8 +20,10 @@ LIBTOOL="$LIBTOOL --preserve-dup-deps"
 AC_SUBST(LIBTOOL)dnl
 
 # default flags
-CFLAGS="-Werror -Wall -Wl,-export-dynamic $CFLAGS"
-CXXFLAGS="-Werror -Wall -Wl,-export-dynamic $CXXFLAGS"
+CFLAGS="-Werror -Wall $CFLAGS"
+CXXFLAGS="-Werror -Wall $CXXFLAGS"
+LDFLAGS=" -Wl,-export-dynamic"
+
 AC_DEFINE(__STDC_FORMAT_MACROS)
 AC_DEFINE(__STDC_LIMIT_MACROS)
 
@@ -33,6 +35,9 @@ m4_include([../../../../config/verbose.m4])
 
 # Check for profiling mode
 m4_include([../../../../config/profiling.m4])
+
+# TODO: remove this once the patch is accepted
+AC_CHECK_LIB(rte_kni, rte_kni_init, [AC_DEFINE(DPDK_PATCHED_KNI, 1)], [echo "";AC_WARN([DPDK does not contain the KNI memzone pool patch! NF ports will still work, but the number of NF ports that can be allocated could be limited and fail. You can safely ignore this warning if you are not going to be using NF ports.]); sleep 3], [-lrte_eal -lethdev -lrte_hash -lrte_kni -lrte_lpm -lrte_malloc -lrte_mbuf -lrte_mempool -lrte_power -lrte_ring -lrte_timer -lrte_eal -lrte_kvargs -ldl -lpthread -lrt])
 
 AC_CONFIG_FILES([
 	Makefile

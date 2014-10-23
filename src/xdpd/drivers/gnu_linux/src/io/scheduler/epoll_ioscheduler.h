@@ -83,7 +83,11 @@ protected:
 	//WRITing buckets
 	static const unsigned int WRITE_BUCKETS_PP=4;
 	//static const float WRITE_QOS_QUEUE_FACTOR[ioport::MAX_OUTPUT_QUEUES];
+<<<<<<< HEAD
         static const float WRITE_QOS_QUEUE_FACTOR[IO_MAX_OUTPUT_QUEUES];
+=======
+  static const float WRITE_QOS_QUEUE_FACTOR[IO_MAX_OUTPUT_QUEUES];
+>>>>>>> b0b2d5e2ae5650e7476fd8c8535495315629a48f
 	/* Methods */
 	//WRR
 	static inline bool process_port_rx(unsigned int tid, ioport* port);

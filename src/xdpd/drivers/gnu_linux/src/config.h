@@ -69,7 +69,7 @@
 #define IO_IFACE_USE_PCAP
 
 /* PCAP related config*/
-#define IO_PCAP_BYPASS_TX
+//#define IO_PCAP_BYPASS_TX
 
 /* MMAP related I/O config */
 //Max frame size (WARNING: do not go beyond 8192 bytes, and never underneath 2048 bytes)
