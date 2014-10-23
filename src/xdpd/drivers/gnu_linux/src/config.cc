@@ -33,4 +33,4 @@ COMPILER_ASSERT(INVALID_processing_pkt_in_queue_slots, (PROCESSING_PKT_IN_QUEUE_
   #endif
 #endif
 
-COMPILER_ASSERT(INVALID_io_max_output_queues, (IO_MAX_OUTPUT_QUEUES < IO_IFACE_NUM_QUEUES) );
+COMPILER_ASSERT(INVALID_io_max_output_queues, (IO_MAX_OUTPUT_QUEUES >= IO_IFACE_NUM_QUEUES) );
