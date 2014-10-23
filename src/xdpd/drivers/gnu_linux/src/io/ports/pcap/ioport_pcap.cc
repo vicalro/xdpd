@@ -100,6 +100,8 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 		ret = ::write(notify_pipe[WRITE],&c,sizeof(c));
 		(void)ret; // todo use the value
 #else
+		//if(pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length()) == -1)
+		//	ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets: %s. Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
 		pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		bufferpool::release_buffer(pkt);
 
@@ -176,6 +178,7 @@ datapacket_t* ioport_pcap::read(){
 	}
 
 	ROFL_DEBUG(DRIVER_NAME"[pcap] pcap_next_ex() Packet received\n");
+	ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
 
 	//Retrieve buffer from pool: this is a non-blocking call
 	pkt = bufferpool::get_free_buffer_nonblocking();
