@@ -183,10 +183,6 @@ datapacket_t* ioport_pcap::read(){
 	}
 
 	ROFL_DEBUG(DRIVER_NAME"[pcap] pcap_next_ex() Packet received\n");
-<<<<<<< HEAD
-=======
-	ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
->>>>>>> b0b2d5e2ae5650e7476fd8c8535495315629a48f
 
 	//Retrieve buffer from pool: this is a non-blocking call
 	pkt = bufferpool::get_free_buffer_nonblocking();
@@ -205,11 +201,8 @@ datapacket_t* ioport_pcap::read(){
  pkt_x86->init((uint8_t*)packet, pcap_hdr->len, of_port_state->attached_sw, get_port_no(), 0, true, false);
 #endif
 
-<<<<<<< HEAD
-	ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Size of the packet -> %i.\n", of_port_state->name,pkt_x86->get_buffer_length());
+//	ROFL_DEBUG(DRIVER_NAME"[pcap:%s] Size of the packet -> %i.\n", of_port_state->name,pkt_x86->get_buffer_length());
 
-=======
->>>>>>> b0b2d5e2ae5650e7476fd8c8535495315629a48f
 	//Increment statistics&return
 	of_port_state->stats.rx_packets++;
 	of_port_state->stats.rx_bytes += pkt_x86->get_buffer_length();
@@ -295,15 +288,12 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 	if (likely(cnt > 0)) {
 
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be sent\n", __FUNCTION__, cnt);
-<<<<<<< HEAD
-		int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
-		ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_inject wrote: %d bytes\n",  of_port_state->name, sent);
+		
+		//int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		//ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_inject wrote: %d bytes\n",  of_port_state->name, sent);
 
 		//int sent = pcap_sendpacket(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
-=======
-		//int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
-		int sent = pcap_sendpacket(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
->>>>>>> b0b2d5e2ae5650e7476fd8c8535495315629a48f
 		// send packets in TX
 		//if(unlikely(tx->send() != ROFL_SUCCESS)){
    	if (sent == -1){
