@@ -10,13 +10,23 @@ Change log
 
 v0.6.0
 
+[+] Fixed some LLVM related warnings and errors (clang/clang++)
+
+[+][CMM] Added NF port manager extensions
+
+[+][drivers] Adapted to the new extensions-enabled HAL API
+
+[+][gnu-linux-dpdk] Added support for NF ports, KNI and secondary DPDK proc.(thanks I. Cerrato)
 [O][gnu-linux-dpdk] Moved platform driver to DPDK v1.7 (thanks D. Verbeiren)
 
 
-
+v0.5.2
 v0.5.1
 
+[+] Distributing default xdpd.conf during `make install`
+
 [+][gnu-linux][gnu-linux-dpdk] GTP push/pop actions revised
+[B][gnu-linux][gnu-linux-dpdk] Fixed stored buffer leak during LSI destruction
 [B][gnu-linux][gnu-linux-dpdk] preserve checksum calculation flags in function hal_driver_of1x_process_packet_out
 
 v0.5.0
@@ -40,6 +50,13 @@ v0.5.0
 
 [B][gnu-linux][gnu-linux-dpdk] Fixed bug during replication of packets
 
+
+v0.4.7
+
+[B][CMM] Fixing reverse packet matches bug in ARP values for OF1.2/OF1.3
+
+v0.4.6
+v0.4.5
 v0.4.4
 
 [B] Fix compile errors on older gcc (e.g. v4.4) and old kernels (up to 2.6) where TP_STATUS_VLAN_VALID was not defined
