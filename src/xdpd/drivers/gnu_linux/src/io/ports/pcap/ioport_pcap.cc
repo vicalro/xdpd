@@ -102,12 +102,11 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 #else
 		//if(pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length()) == -1)
 		//	ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets: %s. Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
-<<<<<<< HEAD
+ 
 		//int s;
 		//s = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		//ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_inject wrote: %d bytes\n",  of_port_state->name, s);
-=======
->>>>>>> b0b2d5e2ae5650e7476fd8c8535495315629a48f
+
 		pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		bufferpool::release_buffer(pkt);
 
