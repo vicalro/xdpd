@@ -102,12 +102,22 @@ void ioport_pcap::enqueue_packet(datapacket_t* pkt, unsigned int q_id)
 #else
 		//if(pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length()) == -1)
 		//	ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets: %s. Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
- 
+
 		//int s;
 		//s = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
 		//ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_inject wrote: %d bytes\n",  of_port_state->name, s);
 
-		pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		int s = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+
+		if (s == -1){
+
+			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets: %s. Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
+			assert(0);
+			of_port_state->stats.tx_errors += cnt;
+			of_port_state->queues[q_id].stats.overrun += cnt;
+			//Return buffer to the pool
+		}
+
 		bufferpool::release_buffer(pkt);
 
 #endif //IO_PCAP_BYPASS_TX
@@ -275,8 +285,27 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 		}
 
 		//TM_STAMP_STAGE(pkt, TM_SA7);
+		int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		//ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_inject wrote: %d bytes\n",  of_port_state->name, sent);
 
-		//Return buffer to the pool
+		//int sent = pcap_sendpacket(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+		// send packets in TX
+		//if(unlikely(tx->send() != ROFL_SUCCESS)){
+		if (sent == -1){
+
+			ROFL_ERR(DRIVER_NAME"[pcap:%s] ERROR while sending packets: %s. Size of the packet -> %i.\n", of_port_state->name, pcap_geterr(descr),pkt_x86->get_buffer_length());
+			assert(0);
+			of_port_state->stats.tx_errors += cnt;
+			of_port_state->queues[q_id].stats.overrun += cnt;
+			//Return buffer to the pool
+		}
+
+		//Increment statistics
+		of_port_state->stats.tx_packets += cnt;
+		of_port_state->stats.tx_bytes += tx_bytes_local;
+		of_port_state->queues[q_id].stats.tx_packets += cnt;
+		of_port_state->queues[q_id].stats.tx_bytes += tx_bytes_local;
+
 		bufferpool::release_buffer(pkt);
 
 		//tx_bytes_local += hdr->tp_len;
@@ -284,13 +313,14 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 		deferred_drain++;
 	}
 
+#if 0
 	//Increment stats and return
 	if (likely(cnt > 0)) {
 
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[pcap:%s] schedule %u packet(s) to be sent\n", __FUNCTION__, cnt);
-		
-		//int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
-		sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+
+		int sent = pcap_inject(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
+
 		//ROFL_DEBUG(DRIVER_NAME"[pcap:%s] pcap_inject wrote: %d bytes\n",  of_port_state->name, sent);
 
 		//int sent = pcap_sendpacket(descr,pkt_x86->get_buffer(),pkt_x86->get_buffer_length());
@@ -312,6 +342,7 @@ unsigned int ioport_pcap::write(unsigned int q_id, unsigned int num_of_buckets){
 		of_port_state->queues[q_id].stats.tx_bytes += tx_bytes_local;
 
 	}
+#endif
 
 	//Empty reading pipe (batch)
 	empty_pipe();
