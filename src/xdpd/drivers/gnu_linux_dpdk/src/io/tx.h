@@ -179,7 +179,7 @@ tx_pkt_dpdk_nf_port(switch_port_t* port, datapacket_t* pkt)
 	//Get mbuf pointer
 	mbuf = ((datapacket_dpdk_t*)pkt->platform_state)->mbuf;
 
-	ret = rte_ring_mp_enqueue(port_state->to_nf_queue, (void *) mbuf);
+	ret = rte_ring_sp_enqueue(port_state->to_nf_queue, (void *) mbuf);
 	if( likely((ret == 0) || (ret == -EDQUOT)) ){
 #ifdef ENABLE_DPDK_SECONDARY_SEMAPHORE
 		//The packet has been enqueued
@@ -231,7 +231,7 @@ transmit_kni_nf_port_burst(switch_port_t* port, unsigned int port_id, struct rte
 	unsigned int ret, len;
 
 	//Dequeue a burst from the TX ring	
-	len = rte_ring_mc_dequeue_burst(port_tx_nf_lcore_queue[port_id], (void **)burst, IO_IFACE_MAX_PKT_BURST);      
+	len = rte_ring_sc_dequeue_burst(port_tx_nf_lcore_queue[port_id], (void **)burst, IO_IFACE_MAX_PKT_BURST);      
 
 	ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io][KNI] Trying to transmit burst on KNI port %s of length %u\n",nf_port_mapping[port_id]->name, len);
 
