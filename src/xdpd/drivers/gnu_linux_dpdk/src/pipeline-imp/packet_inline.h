@@ -220,11 +220,13 @@ STATIC_PACKET_INLINE__ datapacket_t* platform_packet_replicate(datapacket_t* pkt
 static inline void output_single_packet(datapacket_t* pkt, datapacket_dpdk_t* pack, switch_port_t* port){
 
 	//Output packet to the appropiate queue and port_num
-	if(likely(port && port->platform_port_state) && port->up && port->forward_packets){
+	if(likely(port->up) && likely(port->forward_packets)){
 		
 		ROFL_DEBUG("[%s] OUTPUT packet(%p)\n", port->name, pkt);
 
-		if(port->type == PORT_TYPE_VIRTUAL){
+		if(port->type == PORT_TYPE_PHYSICAL){
+			xdpd::gnu_linux_dpdk::tx_pkt(port, pack->output_queue, pkt);
+		}else if(port->type == PORT_TYPE_VIRTUAL){
 			/*
 			* Virtual link
 			*/
@@ -249,9 +251,6 @@ static inline void output_single_packet(datapacket_t* pkt, datapacket_dpdk_t* pa
 			xdpd::gnu_linux_dpdk::tx_pkt_kni_nf_port(port, pkt);
 		}
 #endif		
-		else{
-			xdpd::gnu_linux_dpdk::tx_pkt(port, pack->output_queue, pkt);
-		}
 	}else{
 		//Since tx_pkt is not called, we release the mbuf here
 		//pkt will be returned only in case it is in_bufferpool
@@ -277,7 +276,7 @@ STATIC_PACKET_INLINE__ void platform_packet_output(datapacket_t* pkt, switch_por
 	of_switch_t const* sw;
 	datapacket_dpdk_t* pack;
 
-	if(!output_port){
+	if(unlikely(output_port == NULL)){
 		assert(0);
 		return;
 	}
@@ -291,7 +290,7 @@ STATIC_PACKET_INLINE__ void platform_packet_output(datapacket_t* pkt, switch_por
 
 	//flood_meta_port is a static variable defined in the physical_switch
 	//the meta_port
-	if(output_port == flood_meta_port || output_port == all_meta_port){ //We don't have STP, so it is the same
+	if(unlikely(output_port == flood_meta_port) || unlikely(output_port == all_meta_port)){ //We don't have STP, so it is the same
 		datapacket_t* replica;
 		switch_port_t* port_it;
 		datapacket_dpdk_t* replica_pack;
@@ -329,7 +328,7 @@ STATIC_PACKET_INLINE__ void platform_packet_output(datapacket_t* pkt, switch_por
 		rte_pktmbuf_free(((datapacket_dpdk_t*)pkt->platform_state)->mbuf);
 		if( ((datapacket_dpdk_t*)pkt->platform_state)->packet_in_bufferpool )
 			xdpd::gnu_linux::bufferpool::release_buffer(pkt);
-	}else if(output_port == in_port_meta_port){
+	}else if(unlikely(output_port == in_port_meta_port)){
 		
 		//In port
 		switch_port_t* port;
