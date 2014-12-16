@@ -57,9 +57,57 @@ class eOfSmPortModBadPort		: public eOfSmBase {};
 class eOfSmVersionNotSupported		: public eOfSmBase {};
 class eOfSmUnknownSocketType		: public eOfSmBase {};
 class eOfSmExperimentalNotSupported	: public eOfSmBase {};
+class eOfSmNotSupportedByDriver		: public eOfSmBase {};
 
 //Fwd declaration
 class openflow_switch;
+
+/**
+* @brief Logical Switch (LS) extensions management API.
+*
+* @ingroup cmm_mgmt
+*/
+
+class switch_manager_extensions {
+
+	//
+	// IPv4 fragmentation
+	//
+
+	/**
+	 * @brief Enable IPv4 fragmentation in the LSI with dpid
+	 */
+	static void enable_ipv4_fragmentation(const uint64_t dpid);
+
+	/**
+	 * @brief Disable IPv4 fragmentation in the LSI with dpid
+	 */
+	static void disable_ipv4_fragmentation(const uint64_t dpid);
+
+	/**
+	 * @brief Get IPv4 fragmentation filter status
+	 */
+	static bool ipv4_fragmentation_status(const uint64_t dpid);
+
+	//
+	// IPv4 reassembly
+	//
+
+	/**
+	 * @brief Enable IPv4 reassembly filter in the LSI with dpid
+	 */
+	static void enable_ipv4_reassembly(const uint64_t dpid);
+
+	/**
+	 * @brief Enable IPv4 reassembly filter in the LSI with dpid
+	 */
+	static void disable_ipv4_reassembly_filter(const uint64_t dpid);
+
+	/**
+	 * @brief Get IPv4 reassembly filter status
+	 */
+	static bool ipv4_reassembly_status(const uint64_t dpid);
+};
 
 /**
 * @brief Logical Switch (LS) management API.
@@ -207,6 +255,11 @@ public:
 					uint8_t reason, 	
 					of1x_flow_entry_t* removed_flow_entry);
 
+	/**
+	* Extensions APIs
+	*/
+	static switch_manager_extensions extensions;
+
 private:
 	
 	/* Static members */
@@ -223,9 +276,11 @@ private:
 	static const rofl::caddress_in4 binding_addr;
 	static const uint16_t binding_port;
 
+	//Friend class
+	friend class switch_manager_extensions;
+
 	static pthread_mutex_t mutex;
 	static pthread_rwlock_t rwlock;
-
 };
 
 
