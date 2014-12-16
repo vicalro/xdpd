@@ -336,17 +336,11 @@ hal_result_t hal_driver_of1x_process_flow_mod_add(uint64_t dpid, uint8_t table_i
 		return HAL_FAILURE;
 	}
 
-	if(table_id >= lsw->pipeline.num_of_tables)
-		return HAL_FAILURE;
-
-	//TODO: enhance error codes. Contain invalid matches (pipeline enhancement) 
-	if( (result = of1x_add_flow_entry_table(&lsw->pipeline, table_id, flow_entry, check_overlap, reset_counts)) != ROFL_OF1X_FM_SUCCESS){
-
-		if(result == ROFL_OF1X_FM_OVERLAP)
-			return HAL_FM_OVERLAP_FAILURE;
-		
-		return HAL_FAILURE;
+	//Perform addition
+	if( (res = of1x_add_flow_entry_table(&lsw->pipeline, table_id, flow_entry, check_overlap, reset_counts)) !=ROFL_OF1X_FM_SUCCESS){
+		return HAL_CAST_FM_RET(res);
 	}
+
 
 	if(buffer_id && buffer_id != OF1XP_NO_BUFFER){
 	
@@ -383,6 +377,7 @@ hal_result_t hal_driver_of1x_process_flow_mod_add(uint64_t dpid, uint8_t table_i
 hal_result_t hal_driver_of1x_process_flow_mod_modify(uint64_t dpid, uint8_t table_id, of1x_flow_entry_t** flow_entry, uint32_t buffer_id, of1x_flow_removal_strictness_t strictness, bool reset_counts){
 
 	of1x_switch_t* lsw;
+	rofl_of1x_fm_result_t res;
 
 	//Recover port	
 	lsw = (of1x_switch_t*)physical_switch_get_logical_switch_by_dpid(dpid);
@@ -392,11 +387,8 @@ hal_result_t hal_driver_of1x_process_flow_mod_modify(uint64_t dpid, uint8_t tabl
 		return HAL_FAILURE;
 	}
 
-	if(table_id >= lsw->pipeline.num_of_tables)
-		return HAL_FAILURE;
-
-	if(of1x_modify_flow_entry_table(&lsw->pipeline, table_id, flow_entry, strictness, reset_counts) != ROFL_SUCCESS)
-		return HAL_FAILURE;
+	if( (res = of1x_modify_flow_entry_table(&lsw->pipeline, table_id, flow_entry, strictness, reset_counts)) !=ROFL_OF1X_FM_SUCCESS)
+		return HAL_CAST_FM_RET(res);
 	
 	if(buffer_id && buffer_id != OF1XP_NO_BUFFER){
 	
@@ -431,6 +423,7 @@ hal_result_t hal_driver_of1x_process_flow_mod_delete(uint64_t dpid, uint8_t tabl
 
 	of1x_switch_t* lsw;
 	unsigned int i;
+	rofl_of1x_fm_result_t res;
 
 	//Recover port	
 	lsw = (of1x_switch_t*)physical_switch_get_logical_switch_by_dpid(dpid);
@@ -440,21 +433,18 @@ hal_result_t hal_driver_of1x_process_flow_mod_delete(uint64_t dpid, uint8_t tabl
 		return HAL_FAILURE;
 	}
 
-	if(table_id >= lsw->pipeline.num_of_tables && table_id != OF1X_FLOW_TABLE_ALL)
-		return HAL_FAILURE;
-
-
 	if(table_id == OF1X_FLOW_TABLE_ALL){
 		//Single table
 		for(i = 0; i<lsw->pipeline.num_of_tables; i++){
-			if(of1x_remove_flow_entry_table(&lsw->pipeline, i, flow_entry, strictness, out_port, out_group) != ROFL_SUCCESS)
-			return HAL_FAILURE;
+			if( (res = of1x_remove_flow_entry_table(&lsw->pipeline, i, flow_entry, strictness, out_port, out_group)) !=ROFL_OF1X_FM_SUCCESS)
+				return HAL_CAST_FM_RET(res);
 		}	
 	}else{
 		//Single table
-		if(of1x_remove_flow_entry_table(&lsw->pipeline, table_id, flow_entry, strictness, out_port, out_group) != ROFL_SUCCESS)
-			return HAL_FAILURE;
+		if( (res = of1x_remove_flow_entry_table(&lsw->pipeline, table_id, flow_entry, strictness, out_port, out_group)) !=ROFL_OF1X_FM_SUCCESS)
+			return HAL_CAST_FM_RET(res);
 	}
+
 	return HAL_SUCCESS;
 } 
 
