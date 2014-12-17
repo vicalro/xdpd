@@ -22,6 +22,8 @@
 #include <rofl/datapath/pipeline/platform/memory.h>
 #include <rofl/datapath/pipeline/physical_switch.h>
 #include <rofl/datapath/pipeline/openflow/openflow1x/of1x_switch.h>
+
+#include "../config.h"
 #include "../io/bufferpool.h"
 #include "../io/iomanager.h"
 #include "../bg_taskmanager.h"
@@ -29,6 +31,9 @@
 #include "../io/iface_utils.h"
 #include "../io/pktin_dispatcher.h"
 #include "../processing/ls_internal_state.h"
+
+//Extension filters
+#include "../filters/ipv4_filter.h"
 
 //only for Test
 #include <stdlib.h>
@@ -78,6 +83,18 @@ hal_result_t hal_driver_init(hal_extension_ops_t* extensions, const char* extra_
 
 	//We don't support any HAL extension
 	memset(extensions, 0, sizeof(hal_extension_ops_t));
+
+#ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
+	extensions->ipv4_frag_reas.enable_ipv4_frag_filter = gnu_linux_enable_ipv4_frag_filter;
+	extensions->ipv4_frag_reas.disable_ipv4_frag_filter = gnu_linux_disable_ipv4_frag_filter;
+	extensions->ipv4_frag_reas.ipv4_frag_filter_status = gnu_linux_ipv4_frag_filter_status;  
+#endif
+
+#ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
+	extensions->ipv4_frag_reas.enable_ipv4_reas_filter = gnu_linux_enable_ipv4_reas_filter;
+	extensions->ipv4_frag_reas.disable_ipv4_reas_filter = gnu_linux_disable_ipv4_reas_filter;
+	extensions->ipv4_frag_reas.ipv4_reas_filter_status = gnu_linux_ipv4_reas_filter_status;  
+#endif
 
 	return HAL_SUCCESS; 
 }

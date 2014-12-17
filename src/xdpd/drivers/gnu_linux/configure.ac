@@ -47,6 +47,7 @@ m4_include([config/pktclassifier.m4])
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
+	src/filters/Makefile
 	src/hal-imp/Makefile
 	src/hal-imp/openflow/openflow1x/Makefile
 	src/io/Makefile

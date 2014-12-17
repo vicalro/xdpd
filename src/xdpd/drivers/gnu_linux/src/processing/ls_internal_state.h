@@ -5,6 +5,7 @@
 #ifndef LS_INTERNAL_STATE_H_
 #define LS_INTERNAL_STATE_H_
 
+#include <stdbool.h>
 #include "../config.h"
 #include "../util/circular_queue.h"
 #include "../io/datapacket_storage.h"
@@ -26,6 +27,12 @@ typedef struct switch_platform_state {
 
         //Packet storage pointer 
         datapacket_storage* storage;
+	
+	//IPv4 fragmentation filter
+	bool ipv4_frag_filter_status;
+
+	//IPv4 reassembly filter on 
+	bool ipv4_reas_filter_status;
 }switch_platform_state_t;
 
 }// namespace xdpd::gnu_linux 

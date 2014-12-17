@@ -18,6 +18,7 @@ namespace xdpd {
 
 class switch_manager_extensions {
 
+public:
 	//
 	// IPv4 fragmentation
 	//
@@ -49,7 +50,7 @@ class switch_manager_extensions {
 	/**
 	 * @brief Enable IPv4 reassembly filter in the LSI with dpid
 	 */
-	static void disable_ipv4_reassembly_filter(const uint64_t dpid);
+	static void disable_ipv4_reassembly(const uint64_t dpid);
 
 	/**
 	 * @brief Get IPv4 reassembly filter status

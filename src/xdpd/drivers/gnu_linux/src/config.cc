@@ -29,3 +29,7 @@ COMPILER_ASSERT(INVALID_processing_input_queue_slots, (LSI_INPUT_QUEUE_SLOTS >= 
 //COMPILER_ASSERT(INVALID_processing_input_queue_slots_align_power_2, (LSI_INPUT_QUEUE_SLOTS % 2 == 0) );
 COMPILER_ASSERT(INVALID_processing_pkt_in_queue_slots, (LSI_PKT_IN_QUEUE_SLOTS >= 4) );
 //COMPILER_ASSERT(INVALID_processing_pkt_in_queue_slots_align_power_2, (LSI_PKT_IN_QUEUE_SLOTS % 2 == 0) );
+
+//Filters
+COMPILER_ASSERT(INVALID_ipv4_reas_drop_timeout_s, (IPV4_REAS_FRAG_DROP_TIMEOUT_S > 0) );
+COMPILER_ASSERT(INVALID_ipv4_reas_max_frag, (IPV4_REAS_MAX_FRAG > 2) );

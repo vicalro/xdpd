@@ -100,7 +100,7 @@ void switch_manager_extensions::enable_ipv4_reassembly(const uint64_t dpid){
 
 }
 
-void switch_manager_extensions::disable_ipv4_reassembly_filter(const uint64_t dpid){
+void switch_manager_extensions::disable_ipv4_reassembly(const uint64_t dpid){
 
 	openflow_switch* dp;
 	std::string name;

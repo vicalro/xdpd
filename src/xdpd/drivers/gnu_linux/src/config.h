@@ -133,10 +133,37 @@
 //Buffer storage(PKT_IN) expiration time (seconds)
 #define LSI_PKT_IN_STORAGE_EXPIRATION_S 10
 
+/*
+* IPv4 fragmentation and reassembly filter extensions
+*
+* Filters are an outside mechanism to enable IPv4 fragmentation
+* and reassembly, independently, in an LSI.
+*
+* Filters are always disabled by default, and can be enabled via
+* the switch_manager API.
+*
+* Having one or both filters activated in an LSI can affect performance
+* specially if the LSI does apply reassembly 
+*/
+
+//This compiles the support for allowing enabling/disabling
+//fragmentation filters
+//#define COMPILE_IPV4_FRAG_FILTER_SUPPORT
+
+//This compiles the support for allowing enabling/disabling
+//reassembly filters
+//#define COMPILE_IPV4_REAS_FILTER_SUPPORT 
+
+//Fragments timeout
+#define IPV4_REAS_FRAG_DROP_TIMEOUT_S 2
+
+//Maximum fragments
+#define IPV4_REAS_MAX_FRAG 8
 
 /* 
 * Other
 */
+
 
 //Only enable if you want to profile code. This MUST NOT
 //be enabled in "production"
