@@ -74,6 +74,7 @@ AC_CONFIG_FILES([
 	src/xdpd/Makefile
 	src/xdpd/drivers/Makefile
 	src/xdpd/management/Makefile
+	src/xdpd/management/extensions/Makefile
 	src/xdpd/management/plugins/Makefile
 	src/xdpd/management/snapshots/Makefile
 	src/xdpd/openflow/Makefile

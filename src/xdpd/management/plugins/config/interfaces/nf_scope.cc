@@ -2,7 +2,6 @@
 #include "../config.h"
 #include "../../../switch_manager.h"
 #include "../../../port_manager.h"
-#include "../../../nf_port_manager.h"
 #include "../../../../openflow/openflow_switch.h"
 
 #define TYPE "type"
@@ -72,7 +71,7 @@ void nf_scope::post_validate(libconfig::Setting& setting, bool dry_run){
 		if(!dry_run){
 			//Call the addition
 			try{
-				nf_port_manager::create_nf_port(nf_name, nf_port_name, type);
+				port_manager::extensions.create_nf_port(nf_name, nf_port_name, type);
 			}catch(...){
 				ROFL_ERR(CONF_PLUGIN_ID "%s: unable to create port '%s'. Unknown error.\n", setting.getPath().c_str(), nf_port_name.c_str());
 				throw;

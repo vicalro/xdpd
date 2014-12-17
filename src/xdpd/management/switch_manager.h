@@ -29,10 +29,17 @@
 #include <rofl/datapath/pipeline/openflow/of_switch.h>
 #include <rofl/datapath/pipeline/openflow/openflow1x/pipeline/of1x_flow_entry.h>
 
+//Switch class
+#include "../openflow/openflow_switch.h"
+
 //Snapshot
 #include "snapshots/switch_snapshot.h"
 #include "snapshots/flow_entry_snapshot.h"
 #include "snapshots/group_mod_snapshot.h"
+
+//Extensions
+#include "extensions/sm_ext.h"
+//[+]Add more here...
 
 /**
 * @file switch_manager.h
@@ -58,56 +65,6 @@ class eOfSmVersionNotSupported		: public eOfSmBase {};
 class eOfSmUnknownSocketType		: public eOfSmBase {};
 class eOfSmExperimentalNotSupported	: public eOfSmBase {};
 class eOfSmNotSupportedByDriver		: public eOfSmBase {};
-
-//Fwd declaration
-class openflow_switch;
-
-/**
-* @brief Logical Switch (LS) extensions management API.
-*
-* @ingroup cmm_mgmt
-*/
-
-class switch_manager_extensions {
-
-	//
-	// IPv4 fragmentation
-	//
-
-	/**
-	 * @brief Enable IPv4 fragmentation in the LSI with dpid
-	 */
-	static void enable_ipv4_fragmentation(const uint64_t dpid);
-
-	/**
-	 * @brief Disable IPv4 fragmentation in the LSI with dpid
-	 */
-	static void disable_ipv4_fragmentation(const uint64_t dpid);
-
-	/**
-	 * @brief Get IPv4 fragmentation filter status
-	 */
-	static bool ipv4_fragmentation_status(const uint64_t dpid);
-
-	//
-	// IPv4 reassembly
-	//
-
-	/**
-	 * @brief Enable IPv4 reassembly filter in the LSI with dpid
-	 */
-	static void enable_ipv4_reassembly(const uint64_t dpid);
-
-	/**
-	 * @brief Enable IPv4 reassembly filter in the LSI with dpid
-	 */
-	static void disable_ipv4_reassembly_filter(const uint64_t dpid);
-
-	/**
-	 * @brief Get IPv4 reassembly filter status
-	 */
-	static bool ipv4_reassembly_status(const uint64_t dpid);
-};
 
 /**
 * @brief Logical Switch (LS) management API.

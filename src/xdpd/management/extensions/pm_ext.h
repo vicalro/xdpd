@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef NF_PORT_MANAGER_H
-#define NF_PORT_MANAGER_H 
+#ifndef PM_EXT_H
+#define PM_EXT_H 
 
 #include <string>
 #include <list>
@@ -11,21 +11,21 @@
 
 #include <rofl/common/croflexception.h>
 #include <rofl/common/utils/c_logger.h>
-#include "port_manager.h"
+#include <rofl/datapath/pipeline/switch_port.h>
 
 /**
-* @file nf_port_manager.h
+* @file pm_ext.h
 * @author Ivano Cerrato<ivano.cerrato (at) polito.it>
 *
-* @brief NF management API file.
+* @brief Port amanager extensions
 */
 
 namespace xdpd {
 
-class eNFPMmBase			: public rofl::RoflException {};
-class eNFPMmInvalidNF			: public eNFPMmBase {};
-class eNFPMmNotsupportedByDriver	: public eNFPMmBase {};
-class eNFPMmUnknownError 		: public eNFPMmBase {};
+class ePmExtBase			: public rofl::RoflException {};
+class ePmExtInvalidNF			: public ePmExtBase {};
+class ePmExtNotsupportedByDriver	: public ePmExtBase {};
+class ePmExtUnknownError 		: public ePmExtBase {};
 
 
 /**
@@ -35,7 +35,7 @@ class eNFPMmUnknownError 		: public eNFPMmBase {};
 * by the add-on management modules for general NF management operations.
 * @ingroup cmm_mgmt
 */
-class nf_port_manager {
+class port_manager_extensions {
 
 public:
 	/*
@@ -68,12 +68,8 @@ public:
 	//TODO: reconfigure a NF
 	
 	// [+] Add more here..
-	
-private:
-	static pthread_mutex_t mutex;	
-	
 };
 
 }// namespace xdpd 
 
-#endif /* NF_PORT_MANAGER_H_ */
+#endif /* PM_EXT_H_ */

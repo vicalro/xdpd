@@ -18,6 +18,10 @@
 
 #include "snapshots/port_snapshot.h"
 
+//Extensions
+#include "extensions/pm_ext.h"
+//[+]Add more here...
+
 /**
 * @file port_manager.h
 * @author Marc Sune<marc.sune (at) bisdn.de>
@@ -219,7 +223,12 @@ public:
 			pthread_rwlock_unlock(&port_manager::rwlock);
 		}
 	};
-	
+
+	/**
+	* Extensions APIs
+	*/
+	static port_manager_extensions extensions;
+
 private:
 
 	//TODO: this could be cached here in port_manager
@@ -265,6 +274,10 @@ private:
 	//List of blacklisted port names
 	static std::set<std::string> blacklisted;
 	
+	//Friend class
+	friend class port_manager_extensions;
+
+
 	static pthread_mutex_t mutex;	
 	static pthread_rwlock_t rwlock;
 };
