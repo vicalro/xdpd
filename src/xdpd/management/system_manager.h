@@ -7,6 +7,7 @@
 
 #include <list>
 #include <stdint.h>
+#include <pthread.h>
 #include <rofl.h>
 #include <rofl/common/croflexception.h>
 #include <rofl/datapath/hal/driver.h>
@@ -161,6 +162,9 @@ public:
 		return &hal_extension_ops; 
 	}	
 
+	static pthread_t __get_ciosrv_tid(void){
+		return __tid; 
+	}
 private:
 
 	//Prevent double initializations
@@ -186,6 +190,9 @@ private:
 
 	static const std::string XDPD_TEST_RUN_OPT_FULL_NAME;
 	static const std::string XDPD_EXTRA_PARAMS_OPT_FULL_NAME;
+
+	//Main ciosrv loop pthread id
+	static pthread_t __tid;
 
 	//Other helper internal functions
 	static void init_command_line_options(void);

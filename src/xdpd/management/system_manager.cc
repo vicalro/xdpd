@@ -29,6 +29,8 @@ hal_extension_ops_t system_manager::hal_extension_ops;
 std::string system_manager::id("000000001");
 driver_info_t system_manager::driver_info;
 rofl::cunixenv* system_manager::env_parser = NULL;
+pthread_t system_manager::__tid;
+
 const std::string system_manager::XDPD_CLOG_FILE="./xdpd.log";
 const std::string system_manager::XDPD_LOG_FILE="/var/log/xdpd.log";
 const std::string system_manager::XDPD_PID_FILE="/var/run/xdpd.pid";
@@ -143,6 +145,9 @@ void system_manager::init(int argc, char** argv){
 	//Prevent double calls to init()
 	if(inited)
 		ROFL_ERR("[xdpd][system_manager] ERROR: double call to system_amanager::init(). This can only be caused by a spurious call from a misbehaving plugin. Please notify this error. Continuing execution...\n");
+
+	//Set our own pthread tid
+	__tid = pthread_self();
 
 	//Set driver info cache
 	hal_driver_get_info(&driver_info);
