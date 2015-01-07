@@ -8,12 +8,17 @@ using namespace xdpd::gnu_linux;
 
 #ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
 
+//fwd decl
+void calculate_checksums_in_software(datapacket_t* pkt);
+
 void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int* nof, datapacket_t** frags){
 
-	unsigned int pend_bytes, frag_common_len;
+	unsigned int i, pend_bytes, frag_common_len;
+	int frag_chunk;
 	datapacketx86* pack = (datapacketx86*)(*pkt)->platform_state;
 	datapacketx86* frag_pack;
 	classifier_state* cs = &pack->clas_state;
+	classifier_state* frag_cs;
 
 	//Original pointer to ip
 	cpc_ipv4_hdr_t* ipv4 =  (cpc_ipv4_hdr_t*)get_ipv4_hdr(cs, 0);
@@ -42,42 +47,52 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 
 	//Set size&total length for the fragment 0
 	pack->set_buffer_length(mps);
-	///TODO
+	set_ipv4_MF_bit(ipv4);
+	//TODO: offset
 
-	//Recalculate pkt0 checksum
-	//TODO
+	//Mark to calculate the checksum
+	cs->calculate_checksums_in_sw = RECALCULATE_IPV4_CHECKSUM_IN_SW;
 
 	assert(pend_bytes > 0);
 
 	while(pend_bytes){
-
-		//Acquire new packet
+		//Allocate new packet
 		frags[(*nof)] = bufferpool::get_free_buffer_nonblocking();
 		if(unlikely(!frags[(*nof)])){
 			//No buffers => Congestion => drop all fragments
 			goto FRAG_ERROR;
 		}
 
+		//Helpers
 		frag_pack = (datapacketx86*)(frags[(*nof)])->platform_state;
+		frag_cs = &frag_pack->clas_state;
 
 		//Initialize new pkt (do not classify)
 		frag_pack->init(pack->get_buffer(), frag_common_len, pack->lsw, cs->port_in, 0, false, true);
 
 		//Set queue
 		frag_pack->output_queue = pack->output_queue;
+		*frag_cs =  *cs;
 
 		//Calculate number of bytes of this fragment
+		frag_chunk = pend_bytes - (mps - frag_common_len);
 
+		if(frag_chunk < 0)
+			frag_chunk = pend_bytes;
 
 		//Copy fragment chunk
-		//memcpy(&pack->get_buffer())
-		//TODO
+		memcpy(frag_pack->get_buffer(), pack->get_buffer(), frag_chunk);
 
-		//Adjust size
-		//pack->set_buffer_length(frag_common_len+frag_chunk);
+		//Readjust size and IPv4 header
+		pack->set_buffer_length(frag_common_len+frag_chunk);
+		ipv4 =  (cpc_ipv4_hdr_t*)get_ipv4_hdr(frag_cs, 0);
+		set_ipv4_MF_bit(ipv4);
+		//TODO: offset
 
-		//Calculate IPv4 checksum
-		cs->calculate_checksums_in_sw = RECALCULATE_IPV4_CHECKSUM_IN_SW; 
+		//Mark to calculate the checksum
+		frag_cs->calculate_checksums_in_sw = RECALCULATE_IPV4_CHECKSUM_IN_SW;
+		//Decrement pending bytes
+		pend_bytes -= frag_chunk;
 
 		//Increment nof and continue
 		(*nof)++;
@@ -85,13 +100,25 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 			goto FRAG_ERROR;
 	}
 
+	//Now that all fragments had no errors
+	//recalculate checksums
+	for(i=0;i<*nof;++i){
+		calculate_checksums_in_software(frags[(i)]);
+	}
+
+#ifdef DEBUG
+	//Cleanup and leave
 	pkt = NULL;
+#endif
+
 	return;
 
 FRAG_ERROR:
 	while(*nof)
 		bufferpool::release_buffer(frags[--(*nof)]);
+#ifdef DEBUG
 	pkt = NULL;
+#endif
 }
 
 
@@ -100,32 +127,32 @@ FRAG_ERROR:
 hal_result_t gnu_linux_enable_ipv4_frag_filter(const uint64_t dpid){
 
 	of_switch_t* sw = physical_switch_get_logical_switch_by_dpid(dpid);
-	
+
 	if(!sw)
 		return HAL_FAILURE;
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
 
 	//TODO: remove and call proper enable/disable
-	ls_int->ipv4_frag_filter_status = true;	
+	ls_int->ipv4_frag_filter_status = true;
 
 	ROFL_INFO(DRIVER_NAME" IPv4 fragmentation filter ENABLED.\n");
-	
+
 	return HAL_SUCCESS;
 }
 
 hal_result_t gnu_linux_disable_ipv4_frag_filter(const uint64_t dpid){
 
 	of_switch_t* sw = physical_switch_get_logical_switch_by_dpid(dpid);
-	
+
 	if(!sw)
 		return HAL_FAILURE;
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
 
 	//TODO: remove and call proper enable/disable
-	ls_int->ipv4_frag_filter_status = false;	
-	
+	ls_int->ipv4_frag_filter_status = false;
+
 	ROFL_INFO(DRIVER_NAME" IPv4 fragmentation filter DISABLED.\n");
 
 	return HAL_SUCCESS;
@@ -139,7 +166,7 @@ bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid){
 		return HAL_FAILURE;
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
-	
+
 	return ls_int->ipv4_frag_filter_status;
 }
 
@@ -150,16 +177,16 @@ bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid){
 #ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
 
 hal_result_t gnu_linux_enable_ipv4_reas_filter(const uint64_t dpid){
-	
+
 	of_switch_t* sw = physical_switch_get_logical_switch_by_dpid(dpid);
-	
+
 	if(!sw)
 		return HAL_FAILURE;
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
 	//TODO: remove and call proper enable/disable
-	ls_int->ipv4_reas_filter_status = true;	
-	
+	ls_int->ipv4_reas_filter_status = true;
+
 	ROFL_INFO(DRIVER_NAME" IPv4 reassembly filter ENABLED.\n");
 
 	return HAL_SUCCESS;
@@ -168,14 +195,14 @@ hal_result_t gnu_linux_enable_ipv4_reas_filter(const uint64_t dpid){
 hal_result_t gnu_linux_disable_ipv4_reas_filter(const uint64_t dpid){
 
 	of_switch_t* sw = physical_switch_get_logical_switch_by_dpid(dpid);
-	
+
 	if(!sw)
 		return HAL_FAILURE;
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
 	//TODO: remove and call proper enable/disable
-	ls_int->ipv4_reas_filter_status = false; 
-	
+	ls_int->ipv4_reas_filter_status = false;
+
 	ROFL_INFO(DRIVER_NAME" IPv4 reassembly filter DISABLED.\n");
 
 	return HAL_SUCCESS;
@@ -184,12 +211,12 @@ hal_result_t gnu_linux_disable_ipv4_reas_filter(const uint64_t dpid){
 bool gnu_linux_ipv4_reas_filter_status(const uint64_t dpid){
 
 	of_switch_t* sw = physical_switch_get_logical_switch_by_dpid(dpid);
-	
+
 	if(!sw)
 		return HAL_FAILURE;
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
-	
+
 	return ls_int->ipv4_reas_filter_status;
 }
 

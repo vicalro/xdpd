@@ -97,7 +97,7 @@
 //
 
 //Checksums calculator
-static inline
+inline
 void calculate_checksums_in_software(datapacket_t* pkt){
 
 #ifndef EMPTY_PACKET_PROCESSING_ROUTINES
