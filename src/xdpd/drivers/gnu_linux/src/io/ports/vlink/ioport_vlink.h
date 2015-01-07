@@ -9,8 +9,8 @@
 #include <rofl.h>
 #include <rofl/datapath/pipeline/common/datapacket.h>
 #include <rofl/datapath/pipeline/switch_port.h>
-#include "../ioport.h" 
-#include "../../datapacketx86.h" 
+#include "../ioport.h"
+#include "../../datapacketx86.h"
 
 
 /**
@@ -24,8 +24,8 @@ namespace xdpd {
 namespace gnu_linux {
 
 /**
-* @brief Virtual port used in a virtual link, conceptually similar to 
-* a veth in GNU/Linux. 
+* @brief Virtual port used in a virtual link, conceptually similar to
+* a veth in GNU/Linux.
 *
 * ioport_vlink ports shall always be created in pairs and connected each other.
 */
@@ -35,13 +35,12 @@ public:
 	//ioport_vlink
 	ioport_vlink(switch_port_t* of_ps, unsigned int num_queues= IO_IFACE_NUM_QUEUES);
 	virtual ~ioport_vlink();
-	 
+
 	/**
 	* Set other vlink edge (ioport)
 	*/
 	virtual void set_connected_port(ioport_vlink* connected_port);
-	
-	virtual void enqueue_packet(datapacket_t* pkt, unsigned int q_id);
+
 
 	//Non-blocking read and write
 	virtual datapacket_t* read(void);
@@ -51,11 +50,9 @@ public:
 	inline virtual int get_read_fd(void){return rx_notify_pipe[READ];};
 	inline virtual int get_write_fd(void){return tx_notify_pipe[READ];};
 
-	virtual rofl_result_t 
-	down();
+	virtual rofl_result_t down();
 
-	virtual rofl_result_t
-	up();
+	virtual rofl_result_t up();
 
 	/**
 	* Emulate transmission of the packet
@@ -66,27 +63,28 @@ public:
 	* Reference to the other edge (connected ioport)
 	*/
 	ioport_vlink* connected_port;
-	
+
 protected:
 	//fds
 	int rx_notify_pipe[2];
 	int tx_notify_pipe[2];
 	int deferred_drain_rx;
 	int deferred_drain_tx;
-	
+
 	//Used to drain the pipe
 	char draining_buffer[IO_IFACE_RING_SLOTS];
-	
+
 	//Pipe extremes
 	static const unsigned int READ=0;
 	static const unsigned int WRITE=1;
-	
+
 	static const unsigned int MIN_PKT_LEN=14;
-	
+
 	void empty_pipe(int* pipe, int* deferred_drain);
+	virtual void enqueue_packet__(datapacket_t* pkt, unsigned int q_id);
 };
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 

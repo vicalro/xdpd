@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef IOPORTV2_MMAP_H
-#define IOPORTV2_MMAP_H 
+#define IOPORTV2_MMAP_H
 
 #include <linux/sockios.h>
 
@@ -32,13 +32,13 @@ namespace gnu_linux {
 * @author Marc Sune<marc.sune (at) bisdn.de>
 *
 * @brief GNU/Linux interface access via Memory Mapped
-* region (MMAP) using PF_PACKET TX/RX rings 
+* region (MMAP) using PF_PACKET TX/RX rings
 */
 
 
 /**
 * @brief GNU/Linux interface access via Memory Mapped
-* region (MMAP) using PF_PACKET TX/RX rings (v2) 
+* region (MMAP) using PF_PACKET TX/RX rings (v2)
 *
 * @ingroup driver_gnu_linux_io_ports
 */
@@ -57,9 +57,6 @@ public:
 
 	virtual
 	~ioport_mmap();
-
-	//Enque packet for transmission(blocking)
-	virtual void enqueue_packet(datapacket_t* pkt, unsigned int q_id);
 
 
 	//Non-blocking read and write
@@ -100,12 +97,14 @@ public:
 	virtual rofl_result_t down(void);
 
 protected:
+	//Enque packet for transmission(blocking)
+	virtual void enqueue_packet__(datapacket_t* pkt, unsigned int q_id);
 
 private:
-	
+
 	//Minimum frame size (ethernet header size)
 	static const unsigned int MIN_PKT_LEN=14;
-	
+
 	//mmap internals
 	mmap_rx* rx;
 	mmap_tx* tx;
@@ -118,10 +117,10 @@ private:
 
 	//Pipe used to
 	int notify_pipe[2];
-	
+
 	//Used to drain the pipe
 	char draining_buffer[IO_IFACE_RING_SLOTS];
-	
+
 	//Pipe extremes
 	static const unsigned int READ=0;
 	static const unsigned int WRITE=1;
@@ -131,7 +130,7 @@ private:
 	void empty_pipe(void);
 };
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 #endif /* IOPORTV2_MMAP_H_ */

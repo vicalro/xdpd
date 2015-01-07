@@ -1,17 +1,17 @@
 #include "ioport_mockup.h"
 #include <iostream>
 #include <rofl/common/utils/c_logger.h>
-#include "../../bufferpool.h" 
+#include "../../bufferpool.h"
 #include <fcntl.h>
 
 using namespace xdpd::gnu_linux;
 
 //Constructor and destructor
 ioport_mockup::ioport_mockup(switch_port_t* of_ps, unsigned int num_queues):ioport(of_ps,num_queues){
-	
+
 	int ret,flags,i;
 
-	//Open pipe to simulate socket input fd 
+	//Open pipe to simulate socket input fd
 	ret = pipe(input);
 	(void)ret; // todo use the value
 
@@ -20,8 +20,8 @@ ioport_mockup::ioport_mockup(switch_port_t* of_ps, unsigned int num_queues):iopo
 	flags = fcntl(input[READ], F_GETFL, 0);		//get current file status flags
 	flags |= O_NONBLOCK;				//turn off blocking flag
 	fcntl(input[READ], F_SETFL, flags);		//set up non-blocking read
-		
-	//Open pipe for output signaling on enqueue	
+
+	//Open pipe for output signaling on enqueue
 	ret = pipe(notify_pipe);
 	(void)ret; // todo use the value
 
@@ -42,7 +42,7 @@ ioport_mockup::~ioport_mockup(){
 }
 
 //Read and write methods over port
-void ioport_mockup::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
+void ioport_mockup::enqueue_packet__(datapacket_t* pkt, unsigned int q_id){
 
 	size_t ret;
 	//Whatever
@@ -58,17 +58,17 @@ void ioport_mockup::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 }
 
 datapacket_t* ioport_mockup::read(){
-	
-	datapacket_t* pkt; 
+
+	datapacket_t* pkt;
 	datapacketx86* pkt_x86;
 
 
-	//First attempt drain local buffers from previous reads that failed to push 
-	pkt = input_queue->non_blocking_read();	
+	//First attempt drain local buffers from previous reads that failed to push
+	pkt = input_queue->non_blocking_read();
 	if(pkt)
-		return pkt;		
+		return pkt;
 
-	//Allocate free buffer	
+	//Allocate free buffer
 	pkt = bufferpool::get_free_buffer_nonblocking();
 	if(!pkt)
 		return NULL;
@@ -77,14 +77,14 @@ datapacket_t* ioport_mockup::read(){
 
 	//Init in user space
 	pkt_x86->init(NULL, SIMULATED_PKT_SIZE, of_port_state->attached_sw, of_port_state->of_port_num);
-	
+
 	//copy something from stdin to buffer
 	if(::read(input[READ],pkt_x86->get_buffer(),SIMULATED_PKT_SIZE) <0){
 		bufferpool::release_buffer(pkt);
 		return NULL;
 	}
 
-	return pkt;	
+	return pkt;
 }
 
 
@@ -95,7 +95,7 @@ unsigned int ioport_mockup::write(unsigned int q_id, unsigned int num_of_buckets
 	unsigned int i;
 	datapacket_t* pkt;
 	datapacketx86* pkt_x86;
-	
+
 	(void)pkt_x86;
 
 	//Free the pipe
@@ -103,18 +103,18 @@ unsigned int ioport_mockup::write(unsigned int q_id, unsigned int num_of_buckets
 	(void)ret; // todo use the value
 
 	//Go and do stuff
-	for(i=0;i<num_of_buckets;i++){	
-		//Pick buffer	
+	for(i=0;i<num_of_buckets;i++){
+		//Pick buffer
 		pkt = output_queues[q_id]->non_blocking_read();
-		
+
 		if(!pkt)
 			break;
-		
-		//Just "put it into the wire" -> print it 
+
+		//Just "put it into the wire" -> print it
 		pkt_x86 = (datapacketx86*)pkt->platform_state;
-		
+
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME" Getting buffer with id:%d. Putting it into the wire\n", pkt->id);
-		
+
 		//Free buffer
 		bufferpool::release_buffer(pkt);
 	}

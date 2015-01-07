@@ -2,7 +2,7 @@
 #include <iostream>
 #include <sched.h>
 #include <rofl/common/utils/c_logger.h>
-#include "../../bufferpool.h" 
+#include "../../bufferpool.h"
 #include <fcntl.h>
 
 #include "../../../config.h"
@@ -10,13 +10,13 @@
 using namespace xdpd::gnu_linux;
 
 //Constructor and destructor
-ioport_vlink::ioport_vlink(switch_port_t* of_ps, unsigned int num_queues) : ioport(of_ps,num_queues), 
+ioport_vlink::ioport_vlink(switch_port_t* of_ps, unsigned int num_queues) : ioport(of_ps,num_queues),
 	deferred_drain_rx(0),
 	deferred_drain_tx(0){
-	
+
 	int flags,i;
 
-	//Open pipe to simulate socket input fd 
+	//Open pipe to simulate socket input fd
 	if(pipe(rx_notify_pipe) < 0)
 		throw -1;
 	if(pipe(tx_notify_pipe) < 0)
@@ -49,16 +49,16 @@ void ioport_vlink::set_connected_port(ioport_vlink* c_port){
 }
 
 //Read and write methods over port
-void ioport_vlink::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
-	
+void ioport_vlink::enqueue_packet__(datapacket_t* pkt, unsigned int q_id){
+
 	static const char c='a';
 	int ret;
 	unsigned int len;
-	
+
 	datapacketx86* pkt_x86 = (datapacketx86*) pkt->platform_state;
 	len = pkt_x86->get_buffer_length();
 
-	if ( likely(of_port_state->up) && 
+	if ( likely(of_port_state->up) &&
 		likely(of_port_state->forward_packets) &&
 		likely(len >= MIN_PKT_LEN) ) {
 
@@ -69,7 +69,7 @@ void ioport_vlink::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 			bufferpool::release_buffer(pkt);
 			assert(0);
 		}
-	
+
 		//Store on queue and exit. This is NOT copying it to the vlink buffer
 		if(output_queues[q_id]->non_blocking_write(pkt) != ROFL_SUCCESS){
 			ROFL_DEBUG(DRIVER_NAME"[vlink:%s] Packet(%p) dropped. Congestion in output queue: %d\n",  of_port_state->name, pkt, q_id);
@@ -78,14 +78,14 @@ void ioport_vlink::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 
 #ifndef IO_KERN_DONOT_CHANGE_SCHED
 			//Force descheduling (prioritize TX)
-			sched_yield();	
+			sched_yield();
 #endif
 
 			return;
 		}
 
 		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[vlink:%s] Packet(%p) enqueued, buffer size: %d\n",  of_port_state->name, pkt, output_queues[q_id]->size());
-	
+
 		//Write to pipe
 		ret = ::write(tx_notify_pipe[WRITE],&c,sizeof(c));
 		(void)ret; // todo use the value
@@ -111,11 +111,11 @@ inline void ioport_vlink::empty_pipe(int* pipe, int* deferred_drain){
 		return;
 
 	//Just take the byte from the pipe
-	if(*deferred_drain > IO_IFACE_RING_SLOTS)	
+	if(*deferred_drain > IO_IFACE_RING_SLOTS)
 		ret = ::read(pipe[READ],draining_buffer,IO_IFACE_RING_SLOTS);
 	else
 		ret = ::read(pipe[READ],draining_buffer,*deferred_drain);
-		
+
 	if(ret > 0){
 		*deferred_drain -= ret;
 
@@ -130,7 +130,7 @@ datapacket_t* ioport_vlink::read(){
 
 	datapacket_t* pkt = input_queue->non_blocking_read();
 	datapacketx86* pkt_x86;
-		
+
 	//Attempt to read one byte from the pipe
 	if(pkt){
 		pkt_x86 = (datapacketx86*) pkt->platform_state;
@@ -161,28 +161,28 @@ unsigned int ioport_vlink::write(unsigned int q_id, unsigned int num_of_buckets)
 
 		//Retrieve the buffer
 		pkt = queue->non_blocking_read();
-		
+
 		if(!pkt)
 			break;
-	
-		deferred_drain_tx++;	
-		
-		//Store in the input queue in the 
+
+		deferred_drain_tx++;
+
+		//Store in the input queue in the
 		if(connected_port->tx_pkt(pkt) != ROFL_SUCCESS){
-		
+
 			//Increment errors
 			of_port_state->queues[q_id].stats.overrun++;
 			of_port_state->stats.tx_dropped++;
-	
+
 			//Congestion in the input queue of the vlink, drop
 			bufferpool::release_buffer(pkt);
 			continue;
 		}
-		
+
 		tx_bytes_local += ((datapacketx86*)pkt->platform_state)->get_buffer_length();
 		cnt++;
 	}
-		
+
 
 	//Increment statistics
 	of_port_state->stats.tx_packets += cnt;
@@ -192,7 +192,7 @@ unsigned int ioport_vlink::write(unsigned int q_id, unsigned int num_of_buckets)
 
 	//Empty reading pipe (batch)
 	empty_pipe(tx_notify_pipe, &deferred_drain_tx);
-	
+
 	return num_of_buckets;
 }
 
@@ -211,7 +211,7 @@ rofl_result_t ioport_vlink::tx_pkt(datapacket_t* pkt){
 	//Notify read event and return
 	ret = ::write(rx_notify_pipe[WRITE],&c,sizeof(c));
 	(void)ret;
-	
+
 	return ROFL_SUCCESS;
 }
 

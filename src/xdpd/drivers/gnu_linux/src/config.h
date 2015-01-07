@@ -2,18 +2,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef XDPD_GNU_LINUX_CONFIG_H 
-#define XDPD_GNU_LINUX_CONFIG_H 
+#ifndef XDPD_GNU_LINUX_CONFIG_H
+#define XDPD_GNU_LINUX_CONFIG_H
 
 /**
 * @file config.h
 *
 * @author Marc Sune<marc.sune (at) bisdn.de>
 *
-* @brief Configuration file for the xDPd GNU/Linux driver. Configuration is optimized by a 
+* @brief Configuration file for the xDPd GNU/Linux driver. Configuration is optimized by a
 * system which has 4 hw cores (hw threads). Please adjust it to your needs (specially THREAD numbers).
 * @warning Incorrect values on this file can impact heavily the performance of this driver... Be advised
-* 
+*
 */
 
 //---------------------------------------------------------//
@@ -34,10 +34,10 @@
 * one may want to tweak:
 *
 * - The amount of threads used for doing I/O: the IO_RX/TX_THREADS defines the amount of threads that may be used
-*   for serving the ports. As a rule of thumb, one should configure: 
+*   for serving the ports. As a rule of thumb, one should configure:
 *
 *                 IO_RX_THREADS+IO_TX_THREADS+1 == Number of cores or CPUs of the system
-*                 IO_RX_THREADS+IO_TX_THREADS   <= IO_MAX_THREADS  
+*                 IO_RX_THREADS+IO_TX_THREADS   <= IO_MAX_THREADS
 *
 * - The amount of buffers: IO_BUFFERPOOL_CAPACITY defines the amount of pre-allocated buffers.
 * - The number of (soft) queues per port: IO_IFACE_NUM_QUEUES
@@ -66,9 +66,9 @@
 //Bufferpool reservoir(PKT_INs); ideally at least X*max_num_lsis
 #define IO_BUFFERPOOL_RESERVOIR 2048
 
-//Number of buffers available for I/O. Dimension according to the 
+//Number of buffers available for I/O. Dimension according to the
 //the maximum number of interfaces that can run at the same time
-//Warning: changing the size of this variable can affect performance 
+//Warning: changing the size of this variable can affect performance
 #define IO_BUFFERPOOL_CAPACITY 2048*16 //32K buffers
 
 /*
@@ -96,7 +96,7 @@
 //Align to a power of 2
 #define IO_IFACE_MMAP_FRAME_SIZE 2048
 //Do not touch these values unless you know what your are doing
-#define IO_IFACE_MMAP_BLOCKS 2 
+#define IO_IFACE_MMAP_BLOCKS 2
 #define IO_IFACE_MMAP_BLOCK_SIZE 96
 
 /*
@@ -104,12 +104,12 @@
 */
 
 //Kernel scheduling policy for I/O threads. Possible values SCHED_FIFO, SCHED_RR or SCHED_OTHER
-//Warning: change it only if you know what you are doing 
+//Warning: change it only if you know what you are doing
 #define IO_KERN_SCHED_POL SCHED_OTHER
 
 //Uncomment this to prevent the driver to change priority and scheduling policy for I/O threads
-//Warning: change it only if you know what you are doing 
-//#define IO_KERN_DONOT_CHANGE_SCHED 
+//Warning: change it only if you know what you are doing
+//#define IO_KERN_DONOT_CHANGE_SCHED
 
 
 /*
@@ -120,7 +120,7 @@
 
 //Per thread input queue to the switch
 //Align to a power of 2
-#define LSI_INPUT_QUEUE_SLOTS 1024 
+#define LSI_INPUT_QUEUE_SLOTS 1024
 
 //Per thread input queue to the switch
 //Align to a power of 2
@@ -143,7 +143,7 @@
 * the switch_manager API.
 *
 * Having one or both filters activated in an LSI can affect performance
-* specially if the LSI does apply reassembly 
+* specially if the LSI does apply reassembly
 */
 
 //This compiles the support for allowing enabling/disabling
@@ -152,7 +152,7 @@
 
 //This compiles the support for allowing enabling/disabling
 //reassembly filters
-//#define COMPILE_IPV4_REAS_FILTER_SUPPORT 
+//#define COMPILE_IPV4_REAS_FILTER_SUPPORT
 
 //Fragments timeout
 #define IPV4_REAS_FRAG_DROP_TIMEOUT_S 2
@@ -160,7 +160,7 @@
 //Maximum fragments
 #define IPV4_REAS_MAX_FRAG 8
 
-/* 
+/*
 * Other
 */
 

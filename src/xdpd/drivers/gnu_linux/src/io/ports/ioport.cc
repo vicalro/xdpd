@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <rofl/common/utils/c_logger.h>
 #include "../bufferpool.h"
+#include "../datapacketx86.h"
+#include "../packet_classifiers/pktclassifier.h"
 
 using namespace xdpd::gnu_linux;
 
@@ -16,24 +18,24 @@ using namespace xdpd::gnu_linux;
 ioport::ioport(switch_port_t* of_ps, unsigned int q_num){
 
 	//Output queues
-	num_of_queues = q_num;	
+	num_of_queues = q_num;
 
 	//of_port_state
 	of_port_state = of_ps;
-	
+
 	//Maximum packet size
-	mps = 0;
-	
+	mps = NO_MPS;
+
 	//Copy MAC address
-	memcpy(mac, of_ps->hwaddr, ETHER_MAC_LEN); 
+	memcpy(mac, of_ps->hwaddr, ETHER_MAC_LEN);
 
 	//Initialize input queue
-	input_queue = new circular_queue<datapacket_t>(IO_IFACE_RING_SLOTS);	
+	input_queue = new circular_queue<datapacket_t>(IO_IFACE_RING_SLOTS);
 
 	for(int i=0;i<IO_IFACE_NUM_QUEUES;++i)
-		output_queues[i] = new circular_queue<datapacket_t>(IO_IFACE_RING_SLOTS);	
-	
-	//Initalize pthread rwlock		
+		output_queues[i] = new circular_queue<datapacket_t>(IO_IFACE_RING_SLOTS);
+
+	//Initalize pthread rwlock
 	if(pthread_rwlock_init(&rwlock, NULL) < 0){
 		//Can never happen...
 		ROFL_ERR(DRIVER_NAME" Unable to initialize ioport's rwlock\n");
@@ -57,12 +59,12 @@ void ioport::drain_queues(){
 
 	//Drain input queue
 	while( ( pkt = input_queue->non_blocking_read() ) != NULL){
-		bufferpool::release_buffer(pkt);	
+		bufferpool::release_buffer(pkt);
 	}
-	
+
 	for(int i=0;i<IO_IFACE_NUM_QUEUES;++i){
 		while( ( pkt = output_queues[i]->non_blocking_read() ) != NULL){
-			bufferpool::release_buffer(pkt);	
+			bufferpool::release_buffer(pkt);
 		}
 	}
 }
@@ -107,3 +109,30 @@ rofl_result_t ioport::set_advertise_config(uint32_t advertised){
 	return ROFL_SUCCESS;
 }
 
+#ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
+
+void ioport::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
+	datapacketx86* pack = (datapacketx86*)pkt->platform_state;
+
+	if(unlikely(pack->get_buffer_length() > mps)){
+		unsigned int i, num_of_frags;
+		datapacket_t* frags[IPV4_REAS_MAX_FRAG];
+
+		//Check if is an IPv4 packet
+		if(unlikely(get_ipv4_hdr( GET_CLAS_STATE_PTR(pkt) , 0) == NULL)){
+			//Packet is not an IPv4 packet => DROP
+			bufferpool::release_buffer(pkt);
+		}
+
+		//Call the fragmentation library
+		//TODO
+
+		//Enqueue all pkts
+		for(i=0; i<num_of_frags; ++i){
+			enqueue_packet__(frags[i], q_id);
+		}
+	}else{
+		enqueue_packet__(pkt, q_id);
+	}
+}
+#endif

@@ -46,7 +46,7 @@ void clone_pkt_contents(datapacket_t* src, datapacket_t* dst){
 	//Initialize buffer
 	datapacketx86 *pack_src = (datapacketx86*)src->platform_state;
 	datapacketx86 *pack_dst = (datapacketx86*)dst->platform_state;
-	
+
 	//Initialize the buffer and copy but do not classify
 	pack_dst->init(pack_src->get_buffer(), pack_src->get_buffer_length(), pack_src->lsw, pack_src->clas_state.port_in, pack_src->clas_state.phy_port_in, false, true);
 
@@ -64,14 +64,14 @@ STATIC_PACKET_INLINE__
 void platform_packet_set_queue(datapacket_t* pkt, uint32_t queue)
 {
 	datapacketx86 *pack = (datapacketx86*)pkt->platform_state;
-	pack->output_queue = queue;	
+	pack->output_queue = queue;
 }
 
 STATIC_PACKET_INLINE__
 void platform_packet_drop(datapacket_t* pkt)
 {
 	ROFL_DEBUG(DRIVER_NAME"[pkt] Dropping packet(%p)\n",pkt);
-	
+
 	//Release buffer
 	bufferpool::release_buffer(pkt);
 
@@ -82,15 +82,15 @@ void output_single_packet(datapacket_t* pkt, datapacketx86* pack, switch_port_t*
 
 	//Output packet to the appropiate queue and port_num
 	if(likely(port && port->platform_port_state) && port->up && port->forward_packets){
-		
+
 		ROFL_DEBUG(DRIVER_NAME"[pkt][%s] OUTPUT packet(%p)\n", port->name, pkt);
 
 		TM_STAMP_STAGE(pkt, TM_SA5_PRE);
-		
+
 		//Schedule in the port
-		ioport* ioport_inst = (ioport*)port->platform_port_state; 
+		ioport* ioport_inst = (ioport*)port->platform_port_state;
 		ioport_inst->enqueue_packet(pkt, pack->output_queue);
-	
+
 		//Packet must never be retured to the buffer pool, the port will do that
 		//once sent
 	}else{
@@ -104,7 +104,7 @@ void output_single_packet(datapacket_t* pkt, datapacketx86* pack, switch_port_t*
 * Creates a copy (in heap) of the datapacket_t structure including any
 * platform specific state (->platform_state). The following behaviour
 * is expected from this hook:
-* 
+*
 * - All data fields and pointers of datapacket_t struct must be memseted to 0, except:
 * - datapacket_t flag is_replica must be set to true
 * - platform_state, if used, must be replicated (copied) otherwise NULL
@@ -115,12 +115,12 @@ datapacket_t* platform_packet_replicate(datapacket_t* pkt){
 
 	//Get a free buffer
 	datapacket_t* copy = bufferpool::get_free_buffer_nonblocking();
-	
+
 	if(!copy){
 		return copy;
 		return NULL;
 	}
-	
+
 	//Make sure everything is memseted to 0
 	memcpy(&copy->write_actions, &pkt->write_actions ,sizeof(pkt->write_actions));
 
@@ -130,7 +130,7 @@ datapacket_t* platform_packet_replicate(datapacket_t* pkt){
 
 	//Clone contents
 	clone_pkt_contents(pkt,copy);
-	return copy;	
+	return copy;
 }
 
 
@@ -168,39 +168,39 @@ void platform_packet_output(datapacket_t* pkt, switch_port_t* output_port){
 		datapacketx86* replica_pack;
 
 		//Get switch
-		sw = pkt->sw;	
-		
+		sw = pkt->sw;
+
 		if(unlikely(!sw)){
 			bufferpool::release_buffer(pkt);
 			return;
 		}
-	
+
 		//We need to flood
 		for(unsigned i=0;i<LOGICAL_SWITCH_MAX_LOG_PORTS;++i){
 
 			port_it = sw->logical_ports[i].port;
 
-			//Check port is not incomming port, exists, and is up 
+			//Check port is not incomming port, exists, and is up
 			if( (i == pack->clas_state.port_in) || !port_it || port_it->no_flood)
 				continue;
 
 			//replicate packet
-			replica = platform_packet_replicate(pkt); 	
+			replica = platform_packet_replicate(pkt);
 			replica_pack = (datapacketx86*) (replica->platform_state);
 
 			ROFL_DEBUG(DRIVER_NAME"[pkt][%s] OUTPUT FLOOD packet(%p), origin(%p)\n", port_it->name, replica, pkt);
-			
+
 			//send the replica
 			output_single_packet(replica, replica_pack, port_it);
 		}
-			
+
 		//discard the original packet always (has been replicated)
 		bufferpool::release_buffer(pkt);
 	}else if(output_port == in_port_meta_port){
-		
+
 		//In port
 		switch_port_t* port;
-		sw = pkt->sw;	
+		sw = pkt->sw;
 
 		if(unlikely(pack->clas_state.port_in >= LOGICAL_SWITCH_MAX_LOG_PORTS)){
 			assert(0);
@@ -211,13 +211,13 @@ void platform_packet_output(datapacket_t* pkt, switch_port_t* output_port){
 		if( unlikely(port == NULL)){
 			assert(0);
 			return;
-		
+
 		}
-	
-		//Send to the incomming port 
+
+		//Send to the incomming port
 		output_single_packet(pkt, pack, port);
 	}else{
-		//Single output	
+		//Single output
 		output_single_packet(pkt, pack, output_port);
 	}
 
