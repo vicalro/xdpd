@@ -13,19 +13,16 @@ using namespace xdpd;
 of12_endpoint::of12_endpoint(
 		openflow_switch* sw,
 		int reconnect_start_timeout,
+		const rofl::openflow::cofhello_elem_versionbitmap& versionbitmap,
 		enum rofl::csocket::socket_type_t socket_type,
-		cparams const& socket_params)  throw (eOfSmErrorOnCreation) {
+		cparams const& socket_params)  throw (eOfSmErrorOnCreation)  :
+						of_endpoint(versionbitmap, socket_type, socket_params) {
 
 	//Reference back to the sw
 	this->sw = sw;
 
-	//Set bitmaps
-	crofbase::get_versionbitmap().add_ofp_version(rofl::openflow12::OFP_VERSION);
-	rofl::openflow::cofhello_elem_versionbitmap versionbitmap;
-	versionbitmap.add_ofp_version(openflow12::OFP_VERSION);
-
 	//Connect to controller
-	crofbase::rpc_connect_to_ctl(versionbitmap, socket_type, socket_params);
+	crofbase::add_ctl(rofl::cctlid(0), versionbitmap).connect(rofl::cauxid(0), socket_type, socket_params);
 }
 
 /*
@@ -33,6 +30,8 @@ of12_endpoint::of12_endpoint(
 * Handling endpoint messages routines
 *
 */
+
+
 
 void
 of12_endpoint::handle_features_request(
@@ -57,7 +56,7 @@ of12_endpoint::handle_features_request(
 	capabilities 	= of12switch->pipeline.capabilities;
 
 	// array of structures ofp_port
-	rofl::openflow::cofports ports(ctl.get_version());
+	rofl::openflow::cofports ports(ctl.get_version_negotiated());
 
 	//we check all the positions in case there are empty slots
 	for (unsigned int n = 1; n < of12switch->max_ports; n++){
@@ -70,7 +69,7 @@ of12_endpoint::handle_features_request(
 			//Mapping of port state
 			assert(n == _port->of_port_num);
 
-			rofl::openflow::cofport port(ctl.get_version());
+			rofl::openflow::cofport port(ctl.get_version_negotiated());
 
 			port.set_port_no(_port->of_port_num);
 			port.set_hwaddr(cmacaddr(_port->hwaddr, OFP_ETH_ALEN));
@@ -152,7 +151,7 @@ of12_endpoint::handle_desc_stats_request(
 	std::string sw_desc(VERSION);
 
 	rofl::openflow::cofdesc_stats_reply desc_stats(
-			ctl.get_version(),
+			ctl.get_version_negotiated(),
 			mfr_desc,
 			hw_desc,
 			sw_desc,
@@ -181,7 +180,7 @@ of12_endpoint::handle_table_stats_request(
 		throw rofl::eRofBase();
 	
 	num_of_tables = of12switch->pipeline.num_of_tables;
-	rofl::openflow::coftablestatsarray tablestatsarray(ctl.get_version());
+	rofl::openflow::coftablestatsarray tablestatsarray(ctl.get_version_negotiated());
 
 	for (unsigned int n = 0; n < num_of_tables; n++) {
 	
@@ -230,7 +229,7 @@ of12_endpoint::handle_port_stats_request(
 	if(!of12switch)
 		throw rofl::eRofBase();
 
-	rofl::openflow::cofportstatsarray portstatsarray(ctl.get_version());
+	rofl::openflow::cofportstatsarray portstatsarray(ctl.get_version_negotiated());
 
 	/*
 	 *  send statistics for all ports
@@ -341,7 +340,7 @@ of12_endpoint::handle_flow_stats_request(
 	//Construct OF message
 	of1x_stats_single_flow_msg_t *elem = fp_msg->flows_head;
 
-	rofl::openflow::cofflowstatsarray flowstatsarray(ctl.get_version());
+	rofl::openflow::cofflowstatsarray flowstatsarray(ctl.get_version_negotiated());
 
 	uint32_t flow_id = 0;
 
@@ -350,7 +349,7 @@ of12_endpoint::handle_flow_stats_request(
 		rofl::openflow::cofmatch match(rofl::openflow12::OFP_VERSION);
 		of12_translation_utils::of12_map_reverse_flow_entry_matches(elem->matches, match);
 
-		rofl::openflow::cofinstructions instructions(ctl.get_version());
+		rofl::openflow::cofinstructions instructions(ctl.get_version_negotiated());
 		of12_translation_utils::of12_map_reverse_flow_entry_instructions((of1x_instruction_group_t*)(elem->inst_grp), instructions);
 
 		flowstatsarray.set_flow_stats(flow_id).set_table_id(elem->table_id);
@@ -427,7 +426,7 @@ of12_endpoint::handle_aggregate_stats_request(
 
 	try{
 		rofl::openflow::cofaggr_stats_reply aggr_stats_reply(
-				ctl.get_version(),
+				ctl.get_version_negotiated(),
 				fp_msg->packet_count,
 				fp_msg->byte_count,
 				fp_msg->flow_count);
@@ -469,7 +468,7 @@ of12_endpoint::handle_queue_stats_request(
 		throw rofl::eBadRequestBadPort(); 	//Invalid port num
 	}
 
-	rofl::openflow::cofqueuestatsarray queuestatsarray(ctl.get_version());
+	rofl::openflow::cofqueuestatsarray queuestatsarray(ctl.get_version_negotiated());
 
 	/*
 	* port num
@@ -552,7 +551,7 @@ of12_endpoint::handle_group_stats_request(
 		logging::error << "[xdpd][of12][group-stats] unable to retrieve group statistics from pipeline" << std::endl;
 	}
 	
-	rofl::openflow::cofgroupstatsarray groups(ctl.get_version());
+	rofl::openflow::cofgroupstatsarray groups(ctl.get_version_negotiated());
 	
 	for(g_msg = g_msg_all; g_msg; g_msg = g_msg->next){
 		num_of_buckets = g_msg->num_of_buckets;
@@ -590,7 +589,7 @@ of12_endpoint::handle_group_desc_stats_request(
 		const rofl::cauxid& auxid,
 		rofl::openflow::cofmsg_group_desc_stats_request& msg)
 {
-	rofl::openflow::cofgroupdescstatsarray groupdescs(ctl.get_version());
+	rofl::openflow::cofgroupdescstatsarray groupdescs(ctl.get_version_negotiated());
 
 	of1x_stats_group_desc_msg_t *grp_dsc, *group_it;
 
@@ -601,7 +600,7 @@ of12_endpoint::handle_group_desc_stats_request(
 	}
 	
 	for(group_it=grp_dsc;group_it;group_it=group_it->next){
-		rofl::openflow::cofbuckets bclist(ctl.get_version());
+		rofl::openflow::cofbuckets bclist(ctl.get_version_negotiated());
 		of12_translation_utils::of12_map_reverse_bucket_list(bclist,group_it->bucket);
 
 		groupdescs.set_group_desc_stats(group_it->group_id).set_group_type(group_it->type);
@@ -621,7 +620,7 @@ of12_endpoint::handle_group_features_stats_request(
 		const rofl::cauxid& auxid,
 		rofl::openflow::cofmsg_group_features_stats_request& msg)
 {
-	rofl::openflow::cofgroup_features_stats_reply group_features_reply(ctl.get_version());
+	rofl::openflow::cofgroup_features_stats_reply group_features_reply(ctl.get_version_negotiated());
 
 	//TODO: fill in group_features_reply, when groups are implemented
 
@@ -1337,7 +1336,7 @@ of12_endpoint::handle_queue_get_config_request(
 		throw rofl::eRofBase();
 
 
-	rofl::openflow::cofpacket_queues queues(ctl.get_version());
+	rofl::openflow::cofpacket_queues queues(ctl.get_version_negotiated());
 
 	//we check all the positions in case there are empty slots
 	for(unsigned int n = 1; n < of12switch->max_ports; n++){
@@ -1385,7 +1384,7 @@ of12_endpoint::handle_experimenter_message(
 void
 of12_endpoint::handle_ctl_attached(crofctl *ctrl)
 {
-	std::stringstream sstr; sstr << ctrl->get_peer_addr();
+	std::stringstream sstr; sstr << ctrl->get_peer_addr(rofl::cauxid(0));
 	ROFL_INFO("[sw: %s]Controller %s:%u is in CONNECTED state. \n", sw->dpname.c_str() , sstr.str().c_str()); //FIXME: add role
 }
 
@@ -1394,7 +1393,7 @@ of12_endpoint::handle_ctl_attached(crofctl *ctrl)
 void
 of12_endpoint::handle_ctl_detached(crofctl *ctrl)
 {
-	std::stringstream sstr; sstr << ctrl->get_peer_addr();
+	std::stringstream sstr; sstr << ctrl->get_peer_addr(rofl::cauxid(0));
 	ROFL_INFO("[sw: %s] Controller %s:%u has DISCONNECTED. \n", sw->dpname.c_str() ,sstr.str().c_str()); //FIXME: add role
 
 }

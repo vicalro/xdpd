@@ -20,6 +20,7 @@ openflow10_switch::openflow10_switch(uint64_t dpid,
 				unsigned int num_of_tables,
 				int* ma_list,
 				int reconnect_start_timeout,
+				const rofl::openflow::cofhello_elem_versionbitmap& versionbitmap,
 				enum rofl::csocket::socket_type_t socket_type,
 				cparams const& socket_params) throw (eOfSmVersionNotSupported)
 		: openflow_switch(dpid, dpname, OF_VERSION_10, num_of_tables)
@@ -34,14 +35,11 @@ openflow10_switch::openflow10_switch(uint64_t dpid,
 	}
 
 	//Initialize the endpoint, and launch control channel
-	endpoint = new of10_endpoint(this, reconnect_start_timeout, socket_type, socket_params);
+	endpoint = new of10_endpoint(this, reconnect_start_timeout, versionbitmap, socket_type, socket_params);
 }
 
 
 openflow10_switch::~openflow10_switch(){
-
-	//Destroy listening sockets and ofctl instances
-	endpoint->rpc_close_all();
 
 	//Now safely destroy the endpoint
 	delete endpoint;

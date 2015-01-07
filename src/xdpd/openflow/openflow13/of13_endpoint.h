@@ -37,6 +37,7 @@ public:
 	of13_endpoint(
 			openflow_switch* sw,
 			int reconnect_start_timeout,
+			const rofl::openflow::cofhello_elem_versionbitmap& versionbitmap,
 			enum rofl::csocket::socket_type_t socket_type,
 			cparams const& socket_params) throw (eOfSmErrorOnCreation);
 
@@ -73,8 +74,6 @@ public:
 	virtual rofl_result_t notify_port_detached(const switch_port_t* port);
 
 	virtual rofl_result_t notify_port_status_changed(const switch_port_t* port);
-
-
 
 private:
 
