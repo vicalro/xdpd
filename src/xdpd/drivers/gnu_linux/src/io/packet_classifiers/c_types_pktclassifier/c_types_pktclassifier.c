@@ -8,7 +8,7 @@
 
 void pop_pbb(datapacket_t* pkt, classifier_state_t* clas_state){
 
-	pkt_types_t new = PT_POP_PROTO(clas_state, ISID); //Use a nice PBB wrapper instead  
+	pkt_types_t new = PT_POP_PROTO(clas_state, ISID); //Use a nice PBB wrapper instead
 	if(unlikely(new == PT_INVALID))
 		return;
 
@@ -24,13 +24,13 @@ void pop_pbb(datapacket_t* pkt, classifier_state_t* clas_state){
 
 void pop_vlan(datapacket_t* pkt, classifier_state_t* clas_state){
 
-	pkt_types_t new = PT_POP_PROTO(clas_state, VLAN);  
+	pkt_types_t new = PT_POP_PROTO(clas_state, VLAN);
 	if(unlikely(new == PT_INVALID))
 		return;
 
 	cpc_vlan_hdr_t* vlan = get_vlan_hdr(clas_state,0);
 	uint16_t ether_type = *get_vlan_type(vlan);
-	
+
 	//Take header out from packet
 	pkt_pop(pkt, NULL,/*offset=*/sizeof(cpc_eth_hdr_t), sizeof(cpc_vlan_hdr_t));
 
@@ -41,8 +41,8 @@ void pop_vlan(datapacket_t* pkt, classifier_state_t* clas_state){
 	set_ether_type(get_ether_hdr(clas_state,0),ether_type);
 }
 void pop_mpls(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether_type){
-	
-	pkt_types_t new = PT_POP_PROTO(clas_state, MPLS);  
+
+	pkt_types_t new = PT_POP_PROTO(clas_state, MPLS);
 	if(unlikely(new == PT_INVALID))
 		return;
 
@@ -59,7 +59,7 @@ void pop_mpls(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether_
 
 void pop_pppoe(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether_type){
 	cpc_eth_hdr_t* ether_header;
-	
+
 	//Recover the ether(0)
 	ether_header = get_ether_hdr(clas_state,0);
 
@@ -93,7 +93,7 @@ void pop_pppoe(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether
 	}
 
 	set_ether_type(get_ether_hdr(clas_state,0), ether_type);
-	
+
 	//re-classify packet to get the headers beyond pppoe
 	classify_packet(clas_state, clas_state->base, clas_state->len, clas_state->port_in, clas_state->phy_port_in);
 }
@@ -102,7 +102,7 @@ void* push_pbb(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether
 	void *ether_header, *inner_ether_header;
 
 	uint16_t offset = sizeof(cpc_eth_hdr_t)+sizeof(cpc_pbb_isid_hdr_t);
-	pkt_types_t new = PT_PUSH_PROTO(clas_state, ISID); //Put a nice trace  
+	pkt_types_t new = PT_PUSH_PROTO(clas_state, ISID); //Put a nice trace
 	if(unlikely(new == PT_INVALID))
 		return NULL;
 
@@ -118,12 +118,12 @@ void* push_pbb(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether
 	clas_state->type = new;
 
 	//Set new pkt type
-	ether_header = get_ether_hdr(clas_state, 0);    
-	
+	ether_header = get_ether_hdr(clas_state, 0);
+
 	set_ether_dl_dst(ether_header, *get_ether_dl_dst(inner_ether_header));
 	set_ether_dl_src(ether_header, *get_ether_dl_src(inner_ether_header));
 	//set_ether_type(ether_header, ether_type); //Never use set_ether_type => now is 0x0, and will interpret frame as 802.3
-	*((uint16_t*)((uint8_t*)ether_header+12)) = ether_type; 
+	*((uint16_t*)((uint8_t*)ether_header+12)) = ether_type;
 
 	return get_pbb_isid_hdr(clas_state,0);
 }
@@ -132,7 +132,7 @@ void* push_vlan(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ethe
 
 	uint8_t* ether_header;
 
-	pkt_types_t new = PT_PUSH_PROTO(clas_state, VLAN);  
+	pkt_types_t new = PT_PUSH_PROTO(clas_state, VLAN);
 	if(unlikely(new == PT_INVALID))
 		return NULL;
 
@@ -146,14 +146,14 @@ void* push_vlan(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ethe
 		// TODO: log error
 		return 0;
 	}
-	
+
 	//Set new type and base(move left)
 	clas_state->type = new;
 
 	//Set new pkt type
 	cpc_vlan_hdr_t* vlan_header = get_vlan_hdr(clas_state, 0);
-	ether_header = get_ether_hdr(clas_state, 0);    
-	
+	ether_header = get_ether_hdr(clas_state, 0);
+
 	if ( inner_vlan_header ) {
 		set_vlan_id(vlan_header, *get_vlan_id(inner_vlan_header));
 		set_vlan_pcp(vlan_header, *get_vlan_pcp(inner_vlan_header));
@@ -164,7 +164,7 @@ void* push_vlan(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ethe
 
 	set_vlan_type(vlan_header,inner_ether_type);
 	set_ether_type(ether_header, ether_type);
-	
+
 	return vlan_header;
 }
 
@@ -172,7 +172,7 @@ void* push_mpls(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ethe
 	void* ether_header;
 	cpc_mpls_hdr_t* mpls_header, *inner_mpls_header;
 
-	pkt_types_t new = PT_PUSH_PROTO(clas_state, MPLS);  
+	pkt_types_t new = PT_PUSH_PROTO(clas_state, MPLS);
 	if(unlikely(new == PT_INVALID))
 		return NULL;
 
@@ -189,13 +189,13 @@ void* push_mpls(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ethe
 		// TODO: log error
 		return 0;
 	}
-	
+
 	//Set new type and base(move left)
 	clas_state->type = new;
 
 	ether_header=get_ether_hdr(clas_state, 0);
 	set_ether_type(ether_header, ether_type);
-	
+
 	//Set default values
 	mpls_header = get_mpls_hdr(clas_state, 0);
 	if (inner_mpls_header){
@@ -219,19 +219,19 @@ void* push_mpls(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ethe
 }
 
 void* push_pppoe(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t ether_type){
-	
+
 	void* ether_header;
 	//unsigned int current_length;
-	pkt_types_t new = PT_PUSH_PROTO(clas_state, PPPOE);  
+	pkt_types_t new = PT_PUSH_PROTO(clas_state, PPPOE);
 	if(unlikely(new == PT_INVALID))
 		return NULL;
 
 	//Recover the ether(0)
 	ether_header = get_ether_hdr(clas_state, 0);
-	//current_length = ether_header->framelen(); 
-	
-	cpc_pppoe_hdr_t *n_pppoe = NULL; 
-	cpc_ppp_hdr_t *n_ppp = NULL; 
+	//current_length = ether_header->framelen();
+
+	cpc_pppoe_hdr_t *n_pppoe = NULL;
+	cpc_ppp_hdr_t *n_ppp = NULL;
 
 	switch (ether_type) {
 		case ETH_TYPE_PPPOE_SESSION:
@@ -255,7 +255,7 @@ void* push_pppoe(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t eth
 			 */
 			ether_header-=bytes_to_insert; //We change also the local pointer
 			set_ether_type(ether_header, ETH_TYPE_PPPOE_SESSION);
-			
+		
 			n_ppp = get_ppp_hdr(clas_state,0);
 			set_ppp_prot(n_ppp, 0x0000);
 		}
@@ -264,7 +264,7 @@ void* push_pppoe(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t eth
 		case ETH_TYPE_PPPOE_DISCOVERY:
 		{
 			unsigned int bytes_to_insert = sizeof(cpc_pppoe_hdr_t);
-			
+		
 			/*
 			 * this invalidates ether(0), as it shifts ether(0) to the left
 			 */
@@ -277,7 +277,7 @@ void* push_pppoe(datapacket_t* pkt, classifier_state_t* clas_state, uint16_t eth
 
 			set_ether_type(get_ether_hdr(clas_state, 0), ETH_TYPE_PPPOE_DISCOVERY);
 
-			
+		
 		}
 			break;
 	}
@@ -790,6 +790,6 @@ void dump_pkt_classifier(classifier_state_t* clas_state){
 }
 
 size_t get_pkt_len(datapacket_t* pkt, classifier_state_t* clas_state, void *from, void *to){
-	assert(to == NULL);	
+	assert(to == NULL);
 	return clas_state->len -( ((uint8_t*)from) - clas_state->base);
 }

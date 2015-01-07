@@ -21,6 +21,21 @@
 //C++ extern C
 ROFL_BEGIN_DECLS
 
+/**
+* @brief Fragment IPv4 packet
+*
+* It attempts to fragment an IPv4 packet, according to the MPS, and places the
+* fragments in the frag array.
+*
+* The caller MUST ensure the packet is an IPv4 packet before calling this function
+*
+* On success, the fragments are placed in the frags array, and nof is set to the 
+* number of fragments.
+*
+* On failure, nof is set to 0.
+*
+*/
+void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int* nof, datapacket_t** frags);
 
 hal_result_t gnu_linux_enable_ipv4_frag_filter(const uint64_t dpid);
 hal_result_t gnu_linux_disable_ipv4_frag_filter(const uint64_t dpid);

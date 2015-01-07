@@ -150,7 +150,7 @@
 
 //This compiles the support for allowing enabling/disabling
 //fragmentation filters
-//#define COMPILE_IPV4_FRAG_FILTER_SUPPORT
+#define COMPILE_IPV4_FRAG_FILTER_SUPPORT
 
 //This compiles the support for allowing enabling/disabling
 //reassembly filters
@@ -160,12 +160,15 @@
 #define IPV4_REAS_FRAG_DROP_TIMEOUT_S 2
 
 //Maximum fragments
-#define IPV4_REAS_MAX_FRAG 8
+#define IPV4_MAX_FRAG 8
 
 /*
 * Other
 */
 
+//Log once every LOG_SUPRESSION_ITER for repetitive logging
+//Never comment this!
+#define LOG_SUPRESSION_ITER 1000
 
 //Only enable if you want to profile code. This MUST NOT
 //be enabled in "production"

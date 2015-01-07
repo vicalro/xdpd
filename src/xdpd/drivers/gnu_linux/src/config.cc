@@ -32,4 +32,4 @@ COMPILER_ASSERT(INVALID_processing_pkt_in_queue_slots, (LSI_PKT_IN_QUEUE_SLOTS >
 
 //Filters
 COMPILER_ASSERT(INVALID_ipv4_reas_drop_timeout_s, (IPV4_REAS_FRAG_DROP_TIMEOUT_S > 0) );
-COMPILER_ASSERT(INVALID_ipv4_reas_max_frag, (IPV4_REAS_MAX_FRAG > 2) );
+COMPILER_ASSERT(INVALID_ipv4_max_frag, (IPV4_MAX_FRAG > 2) );

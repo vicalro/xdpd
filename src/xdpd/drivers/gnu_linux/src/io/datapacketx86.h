@@ -83,6 +83,7 @@ public: // methods
 	*/
 	inline uint8_t* get_buffer(){ return (uint8_t*)clas_state.base; }
 	inline size_t get_buffer_length(){ return clas_state.len; }
+	inline void set_buffer_length(size_t len){ clas_state.len = len; }
 	inline x86buffering_status_t get_buffering_status(){ return buffering_status; }
 
 	//Transfer buffer to user-space

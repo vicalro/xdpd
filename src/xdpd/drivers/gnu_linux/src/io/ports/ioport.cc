@@ -11,6 +11,7 @@
 #include "../bufferpool.h"
 #include "../datapacketx86.h"
 #include "../packet_classifiers/pktclassifier.h"
+#include "../../filters/ipv4_filter.h"
 
 using namespace xdpd::gnu_linux;
 
@@ -110,25 +111,30 @@ rofl_result_t ioport::set_advertise_config(uint32_t advertised){
 }
 
 #ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
-
 void ioport::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 	datapacketx86* pack = (datapacketx86*)pkt->platform_state;
 
 	if(unlikely(pack->get_buffer_length() > mps)){
-		unsigned int i, num_of_frags;
-		datapacket_t* frags[IPV4_REAS_MAX_FRAG];
+		unsigned int i, nof;
+		datapacket_t* frags[IPV4_MAX_FRAG];
 
 		//Check if is an IPv4 packet
-		if(unlikely(get_ipv4_hdr( GET_CLAS_STATE_PTR(pkt) , 0) == NULL)){
+		if(unlikely(get_ipv4_hdr(&pack->clas_state, 0) == NULL)){
+			static unsigned int dropped = 0;
+
+			if( unlikely((dropped++%LOG_SUPRESSION_ITER) == 0) ){
+				ROFL_ERR(DRIVER_NAME"[ioport:%s] ERROR: %u packets were discarded due to excessive packet size. Interface MPS %u, size curr. pkt being discarded: %u\n", of_port_state->name, dropped, mps, pack->get_buffer_length());
+			}
+
 			//Packet is not an IPv4 packet => DROP
 			bufferpool::release_buffer(pkt);
 		}
 
 		//Call the fragmentation library
-		//TODO
+		gnu_linux_frag_ipv4_pkt(&pkt, mps, &nof, frags);
 
 		//Enqueue all pkts
-		for(i=0; i<num_of_frags; ++i){
+		for(i=0; i<nof; ++i){
 			enqueue_packet__(frags[i], q_id);
 		}
 	}else{

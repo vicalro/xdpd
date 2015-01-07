@@ -34,7 +34,7 @@
 * @author Andreas Koepsel<andreas.koepsel (at) bisdn.de>
 * @author Marc Sune<marc.sune (at) bisdn.de>
 *
-* @brief MMAP RX internals 
+* @brief MMAP RX internals
 *
 */
 
@@ -52,14 +52,14 @@ class mmap_rx{
 
 private:
 
-	
+
 	void* map;
 	int block_size;
 	int n_blocks;
 	int frame_size;
 
 	std::string devname; // device name e.g. "eth0"
-	
+
 	int sd; // socket descriptor
 	struct sockaddr_ll ll_addr;
 	struct tpacket_req req; // ring buffer
@@ -87,7 +87,7 @@ public:
 	inline struct tpacket2_hdr* read_packet(){
 
 		struct tpacket2_hdr *hdr;
-next:  
+next:
 		hdr = (struct tpacket2_hdr*)((uint8_t*)map + rpos * req.tp_frame_size);
 
 		/* treat any status besides kernel as readable */
@@ -101,13 +101,13 @@ next:
 			rpos = 0;
 		}
 
-		//Check if is valid 
+		//Check if is valid
 		if( likely( ( hdr->tp_status&(TP_STATUS_COPY|TP_STATUS_CSUMNOTREADY) ) == 0 ) ){
 #ifdef DEBUG
 			//if( ( hdr->tp_status&(TP_STATUS_LOSING) ) > 0){
 			//	ROFL_DEBUG_VERBOSE(DRIVER_NAME"[mmap_rx:%s] Congestion in RX of the port\n", devname.c_str());
 			//}
-		
+
 #endif
 
 			return hdr;
@@ -115,7 +115,7 @@ next:
 			//TP_STATUS_COPY or TP_STATUS_CSUMNOTREADY (outgoing) => ignore
 			static unsigned int dropped = 0;
 
-			if( unlikely((dropped++%1000) == 0) ){
+			if( unlikely((dropped++%LOG_SUPRESSION_ITER) == 0) ){
 				ROFL_ERR(DRIVER_NAME"[mmap_rx:%s] ERROR: discarded %u frames. Reason(s): %s %s (%u), length: %u. If TP_STATUS_CSUMNOTREADY is the cause, consider disabling RX/TX checksum offloading via ethtool.\n", devname.c_str(), dropped, ((hdr->tp_status&TP_STATUS_COPY) == 0)? "":"TP_STATUS_COPY", ((hdr->tp_status&TP_STATUS_CSUMNOTREADY) == 0)? "":"TP_STATUS_CSUMNOTREADY", hdr->tp_status, hdr->tp_len );
 			}
 
@@ -124,7 +124,7 @@ next:
 			goto next;
 		}
 	}
-	
+
 	//Return buffer
 	inline void return_packet(struct tpacket2_hdr* hdr){
 		hdr->tp_status = TP_STATUS_KERNEL;
@@ -135,13 +135,13 @@ next:
 		return sd;
 	};
 
-	// Get 
+	// Get
 	inline struct tpacket_req* get_tpacket_req(void){
 		return &req;
 	};
 };
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 
