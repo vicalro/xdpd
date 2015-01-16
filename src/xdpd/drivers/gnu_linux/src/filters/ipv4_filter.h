@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef GNU_LINUX_IPV4_FRAG_H
-#define GNU_LINUX_IPV4_FRAG_H 
+#define GNU_LINUX_IPV4_FRAG_H
 
 #include <stdio.h>
 #include <rofl.h>
@@ -29,7 +29,7 @@ ROFL_BEGIN_DECLS
 *
 * The caller MUST ensure the packet is an IPv4 packet before calling this function
 *
-* On success, the fragments are placed in the frags array, and nof is set to the 
+* On success, the fragments are placed in the frags array, and nof is set to the
 * number of fragments.
 *
 * On failure, nof is set to 0.
