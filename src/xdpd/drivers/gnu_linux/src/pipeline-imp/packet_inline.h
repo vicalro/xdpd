@@ -17,6 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "../config.h"
 #include "../io/datapacketx86.h"
 #include "../io/bufferpool.h"
 #include "../io/ports/ioport.h"
