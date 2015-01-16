@@ -449,12 +449,12 @@ void disable_iface_checksum_offloading(int sd, struct ifreq ifr){
  * the checksum
  */
 int check_veth_interface(int sd, struct ifreq ifr){
-	
+
 	int peer_id=0;
 	struct ethtool_drvinfo drvinfo;
 	struct ethtool_gstrings *strings = NULL;
 	struct ethtool_stats* stats = NULL;
-	
+
 	// Get driver info (to find out the number of stats)
 	memset(&drvinfo, 0, sizeof(struct ethtool_drvinfo));
 	drvinfo.cmd = ETHTOOL_GDRVINFO;
@@ -466,7 +466,7 @@ int check_veth_interface(int sd, struct ifreq ifr){
 
 	if (drvinfo.n_stats>0){
 		// Create the structures that will hold the statistics (each statistic name has a length of ETH_GSTRING_LEN)
-		
+
 		strings = (struct ethtool_gstrings *) calloc(1, drvinfo.n_stats*ETH_GSTRING_LEN + sizeof(struct ethtool_gstrings));
 		stats = (struct ethtool_stats*) calloc(1, drvinfo.n_stats*sizeof(uint64_t) + sizeof(struct ethtool_stats));
 		if (!strings || !stats){
@@ -517,7 +517,7 @@ int check_veth_interface(int sd, struct ifreq ifr){
 		free(strings);
 		free(stats);
 		return peer_id;
-	
+
 	}else{
 		ROFL_WARN(DRIVER_NAME"[mmap:%s] No statistics found in interface\n", ifr.ifr_name);
 	}
@@ -624,14 +624,14 @@ rofl_result_t ioport_mmap::up() {
 			return ROFL_FAILURE;
 		}
 		ROFL_DEBUG(DRIVER_NAME"[mmap:%s] Veth iface detected: peer id = %llu : name %s\n", ifr.ifr_name, peer_id, peer_ifr.ifr_name);
-		
+
 		//Disable chk offload in both the interface and the link
 		disable_iface_checksum_offloading(peer_sd, peer_ifr);
 		disable_iface_checksum_offloading(sd, ifr);
 		close(peer_sd);
 	}
-#endif	
-	
+#endif
+
 	//Recover MTU
 	memset((void*)&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, of_port_state->name, sizeof(ifr.ifr_name));
@@ -771,7 +771,7 @@ rofl_result_t ioport_mmap::down() {
 		return ROFL_FAILURE;
 	}
 
-	//Release mutex	
+	//Release mutex
 	pthread_rwlock_unlock(&rwlock);
 
 	close(sd);

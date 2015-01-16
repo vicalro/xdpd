@@ -45,20 +45,20 @@ rofl_result_t datapacketx86::transfer_to_user_space(){
 
 			clas_state.base = (uint8_t*)slot.iov_base + PRE_GUARD_BYTES;
 			// clas_state.len stays as it is
-			
+
 			// set buffering flag
 			buffering_status = X86_DATAPACKET_BUFFERED_IN_USER_SPACE;
-			
-			//Re-classify 
+
+			//Re-classify
 			//TODO: use offsets instead of fixed pointers for frames to avoid re-classification here
 			clas_state.base = get_buffer();
-			
+
 			//Copy done
 		} return ROFL_SUCCESS;
 
 		case X86_DATAPACKET_BUFFERED_IN_USER_SPACE: {
 		}return ROFL_SUCCESS;
-		
+
 		case X86_DATAPACKET_BUFFER_IS_EMPTY: // packet is un-initialized
 		default: {
 		} return ROFL_FAILURE; // do nothing
@@ -76,7 +76,7 @@ rofl_result_t datapacketx86::push(unsigned int offset, unsigned int num_of_bytes
 	if(X86_DATAPACKET_BUFFERED_IN_NIC == buffering_status){
 		transfer_to_user_space();
 	}
-	
+
 	if (offset > clas_state.len){
 		return ROFL_FAILURE;
 	}
@@ -159,7 +159,7 @@ rofl_result_t datapacketx86::push(uint8_t* push_point, unsigned int num_of_bytes
 	if(X86_DATAPACKET_BUFFERED_IN_NIC == buffering_status){
 		transfer_to_user_space();
 	}
-	
+
 	if (push_point < clas_state.base){
 		return ROFL_FAILURE;
 	}

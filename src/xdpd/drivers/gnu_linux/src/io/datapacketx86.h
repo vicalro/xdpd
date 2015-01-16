@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef DATAPACKETX86_H
-#define DATAPACKETX86_H 
+#define DATAPACKETX86_H
 
 #include <bitset>
 #include <iostream>
@@ -51,7 +51,7 @@ typedef enum{
 class datapacketx86{
 
 public:
-	
+
 	//Constructor&destructor
 	datapacketx86(datapacket_t*const pkt);
 	~datapacketx86();
@@ -64,7 +64,7 @@ public:
 
 	//Temporary store for pkt_in information
 	uint8_t pktin_table_id;
-	of_packet_in_reason_t pktin_reason;	
+	of_packet_in_reason_t pktin_reason;
 	uint16_t pktin_send_len;
 
 	//Time profiling
@@ -92,7 +92,7 @@ public: // methods
 	//Header packet classification
 	struct classifier_state clas_state;
 
-	//Other	
+	//Other
 	friend std::ostream& operator<<(std::ostream& os, datapacketx86& pack);
 	inline void dump(void) {
 		dump_pkt_classifier(&clas_state);
@@ -106,7 +106,7 @@ public: // methods
 
 	rofl_result_t push(uint8_t* push_point, unsigned int num_of_bytes);
 	rofl_result_t pop(uint8_t* pop_point, unsigned int num_of_bytes);
-	
+
 private:
 	//HOST buffer size
 	static const unsigned int PRE_GUARD_BYTES  = 256;
@@ -122,7 +122,7 @@ private:
 
 	//FIXME: NIC buffer info MISSING
 
-	//User space buffer	
+	//User space buffer
 	uint8_t user_space_buffer[PRE_GUARD_BYTES+FRAME_SIZE_BYTES+POST_GUARD_BYTES];
 
 	//Status of this buffer
@@ -156,7 +156,7 @@ public:
 
 /*
 * Inline functions
-*/ 
+*/
 
 inline void datapacketx86::init_internal_buffer_location_defaults(x86buffering_status_t location, uint8_t* buf, size_t buflen){
 
@@ -201,7 +201,7 @@ rofl_result_t datapacketx86::init(
 		of_switch_t* sw,
 		uint32_t in_port,
 		uint32_t in_phy_port,
-		bool classify, 
+		bool classify,
 		bool copy_packet_to_internal_buffer){
 
 	// do this sanity check here, as someone may request later a transfer to user space,
@@ -226,9 +226,9 @@ rofl_result_t datapacketx86::init(
 	//Fill in
 	this->lsw = sw;
 	this->output_queue = 0;
-	//Timestamp S1	
+	//Timestamp S1
 	TM_STAMP_STAGE_DPX86(this, TM_S1);
-	
+
 	//Classify the packet
 	if(classify)
 		classify_packet(&clas_state, get_buffer(), get_buffer_length(), in_port, 0);
@@ -249,7 +249,7 @@ void datapacketx86::destroy(void){
 		buffering_status = X86_DATAPACKET_BUFFER_IS_EMPTY;
 	}
 }
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 

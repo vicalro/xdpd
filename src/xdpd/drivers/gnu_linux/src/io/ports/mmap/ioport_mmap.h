@@ -22,8 +22,8 @@
 namespace xdpd {
 namespace gnu_linux {
 
-#define PORT_ETHER_LENGTH 18
-#define PORT_DEFAULT_PKT_SIZE 1518
+#define PORT_ETHER_LENGTH 14
+#define PORT_DEFAULT_PKT_SIZE 1514
 
 /**
 * @file ioport_mmap.h
