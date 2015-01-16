@@ -160,7 +160,7 @@
 #define IPV4_REAS_FRAG_DROP_TIMEOUT_S 2
 
 //Maximum fragments
-#define IPV4_MAX_FRAG 8
+#define IPV4_MAX_FRAG 16
 
 /*
 * Other
