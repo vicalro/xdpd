@@ -60,12 +60,6 @@ void ipv4_calc_checksum(void *hdr){
 };
 
 inline static
-bool ipv4_is_fragment(void *hdr){
-	return 	((cpc_ipv4_hdr_t*)hdr)->offset_flags[1] |
-		(((cpc_ipv4_hdr_t*)hdr)->offset_flags[0]& ~OF1X_2MSBITS_MASK);
-};
-
-inline static
 void set_ipv4_src(void *hdr, uint32_t src){
 	((cpc_ipv4_hdr_t*)hdr)->src = src;
 };
@@ -203,5 +197,12 @@ inline static
 void clear_ipv4_MF_bit(void *hdr){
 	((cpc_ipv4_hdr_t*)hdr)->offset_flags[0] = ((cpc_ipv4_hdr_t*)hdr)->offset_flags[0] & ~OF1X_BIT5_MASK;
 };
+
+inline static
+bool ipv4_is_fragment(void *hdr){
+	return has_ipv4_MF_bit_set(hdr) || ( ((cpc_ipv4_hdr_t*)hdr)->offset_flags[1] |
+		(((cpc_ipv4_hdr_t*)hdr)->offset_flags[0]& ~OF1X_2MSBITS_MASK));
+};
+
 
 #endif //_CPC_IPV4_H_
