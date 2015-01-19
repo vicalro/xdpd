@@ -114,7 +114,8 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 		assert(memcmp(pack->get_buffer(), frag_pack->get_buffer(), 14) == 0);
 
 		//Mark to calculate the checksum
-		frag_cs->calculate_checksums_in_sw = RECALCULATE_IPV4_CHECKSUM_IN_SW;
+		frag_cs->calculate_checksums_in_sw = 0;
+		set_recalculate_checksum(frag_cs, RECALCULATE_IPV4_CHECKSUM_IN_SW);
 		//Decrement pending bytes
 		payload_proc_len += frag_chunk;
 
