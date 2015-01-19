@@ -94,7 +94,7 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 		if(payload_total_len < (payload_proc_len+frag_chunk))
 			frag_chunk = payload_total_len-payload_proc_len;
 		else
-			frag_chunk &= ~(0x3);
+			frag_chunk &= ~(0x7);
 
 		//Copy fragment chunk
 		if(*nof)
