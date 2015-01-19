@@ -36,7 +36,6 @@ typedef struct cpc_ipv4_hdr {
 inline static
 void ipv4_calc_checksum(void *hdr){
 	int i;
-	//initialize();
 
 	size_t datalen = sizeof(cpc_ipv4_hdr_t);
 
@@ -50,21 +49,14 @@ void ipv4_calc_checksum(void *hdr){
 	// sum
 	uint32_t sum = 0;
 
-	for (i = 0; i < wnum; i++)
-	{
+	for (i = 0; i < wnum; i++){
 		uint32_t tmp = (uint32_t)(word16[i]);
 		sum += tmp;
-		//fprintf(stderr, "word16[%d]=0x%08x sum()=0x%08x\n", i, tmp, sum);
 	}
-	//fprintf(stderr, "   sum(1)=0x%x\n", sum);
 
 	uint16_t res16 = (sum & 0x0000ffff) + ((sum & 0xffff0000) >> 16);
 
-	//fprintf(stderr, " res16(1)=0x%x\n", res16);
-
 	((cpc_ipv4_hdr_t*)hdr)->checksum = ~res16;
-
-	//fprintf(stderr, "~res16(1)=0x%x\n", ipv4_hdr->checksum);
 };
 
 inline static

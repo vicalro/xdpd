@@ -19,7 +19,7 @@ typedef struct cpc_tcp_hdr {
 	uint16_t dport;
 	uint32_t seqno;
 	uint32_t ackno;
-	uint16_t flags; // flags, offset, reserved, ... 
+	uint16_t flags; // flags, offset, reserved, ...
 	uint16_t wnd;
 	uint16_t checksum;
 	uint16_t urgent;
@@ -39,8 +39,6 @@ uint16_t ietf_rfc1071_checksum_hbo(uint8_t* buf, size_t buflen)
 	 */
 	register uint32_t sum = 0;
 
-	//fprintf(stderr, "==> calculating checksum in hbo <==\n");
-
 	while( buflen > 1 )  {
 		/*  This is the inner loop */
 
@@ -49,7 +47,6 @@ uint16_t ietf_rfc1071_checksum_hbo(uint8_t* buf, size_t buflen)
 		sum += word16;
 		buf += 2;
 		buflen -= 2;
-		//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", word16, sum);
 	}
 
 	/*  Add left-over byte, if any */
@@ -62,15 +59,9 @@ uint16_t ietf_rfc1071_checksum_hbo(uint8_t* buf, size_t buflen)
    while (sum>>16)
 	   sum = (sum & 0xffff) + (sum >> 16);
 
-   //fprintf(stderr, "folded sum: 0x%08x\n", sum);
-
    uint16_t checksum = ~sum;
 
-   //fprintf(stderr, "complemented sum (hbo): 0x%08x\n", checksum);
-
    checksum = HTONB16(checksum);
-
-   //fprintf(stderr, "complemented sum (nbo): 0x%08x\n", checksum);
 
    return checksum; // return value in hbo
 }
@@ -84,8 +75,6 @@ uint16_t ietf_rfc1071_checksum_nbo(uint8_t* buf, size_t buflen)
 	 */
 	register uint32_t sum = 0;
 
-	//fprintf(stderr, "==> calculating checksum in nbo <==\n");
-
 	while( buflen > 1 )  {
 		/*  This is the inner loop */
 
@@ -94,7 +83,6 @@ uint16_t ietf_rfc1071_checksum_nbo(uint8_t* buf, size_t buflen)
 		sum += word16;
 		buf += 2;
 		buflen -= 2;
-		//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", word16, sum);
 	}
 
 	/*  Add left-over byte, if any */
@@ -107,11 +95,7 @@ uint16_t ietf_rfc1071_checksum_nbo(uint8_t* buf, size_t buflen)
    while (sum>>16)
 	   sum = (sum & 0xffff) + (sum >> 16);
 
-   //fprintf(stderr, "folded sum: 0x%08x\n", sum);
-
    uint16_t checksum = ~sum;
-
-   //fprintf(stderr, "complemented sum (nbo): 0x%08x\n", checksum);
 
    return checksum; // return value in hbo
 }
@@ -120,7 +104,7 @@ inline static
 void tcpv4_calc_checksum(void* hdr, /*nbo*/uint32_t ip_src, /*nbo*/uint32_t ip_dst, /*hbo ;)*/uint8_t ip_proto, /*hbo*/uint16_t length){
 	int wnum;
 	int i;
-	uint32_t sum = 0; //sum
+	uint32_t sum = 0;
 	uint16_t* word16 = (uint16_t*)0;
 
 	//Set 0 to checksum
@@ -132,22 +116,22 @@ void tcpv4_calc_checksum(void* hdr, /*nbo*/uint32_t ip_src, /*nbo*/uint32_t ip_d
 
 	word16 = (uint16_t*)(&((uint8_t*)&ip_src)[0]);
 	sum += *word16;
-	//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", *word16, sum);
+
 	word16 = (uint16_t*)(&((uint8_t*)&ip_src)[2]);
 	sum += *word16;
-	//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", *word16, sum);
+
 
 	word16 = (uint16_t*)(&((uint8_t*)&ip_dst)[0]);
 	sum += *word16;
-	//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", *word16, sum);
+
 	word16 = (uint16_t*)(&((uint8_t*)&ip_dst)[2]);
 	sum += *word16;
-	//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", *word16, sum);
+
 
 	sum += HTONB16((uint16_t)ip_proto);
-	//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x (ip-proto)\n", ip_proto, sum);
+
 	sum += HTONB16(length);
-	//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x (length)\n", length, sum);
+
 
 	/*
 	* part -II- (TCP header + payload)
@@ -158,10 +142,8 @@ void tcpv4_calc_checksum(void* hdr, /*nbo*/uint32_t ip_src, /*nbo*/uint32_t ip_d
 	word16 = (uint16_t*)hdr;
 	wnum = (length / sizeof(uint16_t));
 
-	for (i = 0; i < wnum; i++){
+	for (i = 0; i < wnum; i++)
 		sum += (uint32_t)word16[i];
-		//fprintf(stderr, "uint16_t: 0x%04x sum: 0x%08x\n", word16[i], sum);
-	}
 
 	if(length & 0x1)
 		//Last byte
@@ -172,9 +154,7 @@ void tcpv4_calc_checksum(void* hdr, /*nbo*/uint32_t ip_src, /*nbo*/uint32_t ip_d
 		sum = (sum & 0xFFFF)+(sum >> 16);
 	}while (sum >> 16);
 
-	((cpc_tcp_hdr_t*)hdr)->checksum = (uint16_t)~sum; // correct: this inserts the checksum in network-byte-order
-
-	//fprintf(stderr,"cksum (nbo):  0x04%x \n", ((cpc_tcp_hdr_t*)hdr)->checksum);
+	((cpc_tcp_hdr_t*)hdr)->checksum = (uint16_t)~sum;
 }
 
 inline static
@@ -183,7 +163,7 @@ void tcpv6_calc_checksum(void* hdr, uint128__t ip_src, uint128__t ip_dst, uint8_
 	int i;
 	uint32_t sum = 0; //sum
 	uint16_t* word16;
-	
+
 	//Set 0 to checksum
 	((cpc_tcp_hdr_t*)hdr)->checksum = 0x0;
 
@@ -199,12 +179,12 @@ void tcpv6_calc_checksum(void* hdr, uint128__t ip_src, uint128__t ip_dst, uint8_
 	}
 
 	sum += HTONB16((uint16_t)ip_proto);
-	sum += HTONB16(length); 
+	sum += HTONB16(length);
 
 	/*
 	* part -II- (TCP header + payload)
 	*/
-	
+
 	// pointer on 16bit words
 	// number of 16bit words
 	word16 = (uint16_t*)hdr;
@@ -213,7 +193,7 @@ void tcpv6_calc_checksum(void* hdr, uint128__t ip_src, uint128__t ip_dst, uint8_
 	for (i = 0; i < wnum; i++){
 		sum += (uint32_t)word16[i];
 	}
-	
+
 	if(length & 0x1)
 		//Last byte
 		sum += (uint32_t)( ((uint8_t*)hdr)[length-1]);
@@ -221,11 +201,10 @@ void tcpv6_calc_checksum(void* hdr, uint128__t ip_src, uint128__t ip_dst, uint8_
 	//Fold it
 	do{
 		sum = (sum & 0xFFFF)+(sum >> 16);
-	}while (sum >> 16); 
+	}while (sum >> 16);
 
 	((cpc_tcp_hdr_t*)hdr)->checksum =(uint16_t) ~sum;
 
-//	fprintf(stderr," %x \n", tcp_hdr->checksum);
 }
 
 inline static

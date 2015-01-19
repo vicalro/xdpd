@@ -85,9 +85,8 @@ uint32_t generate_crc32c(uint8_t* buf, size_t buflen)
 	uint32_t result = 0;
 	uint8_t byte0 = 0, byte1 = 0, byte2 = 0, byte3 = 0;
 
-	for (i = 0; i < buflen; i++){
+	for (i = 0; i < buflen; i++)
 		CRC32C(crc32, buf[i]);
-	}
 	result = ~crc32;
 
 	/*  result  now holds the negated polynomial remainder;
