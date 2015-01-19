@@ -41,6 +41,9 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 
 	ROFL_DEBUG(DRIVER_NAME"[ipv4_frag_filter] Starting to fragment packet %p, MPS: %u, total length:%u.\n", *pkt, mps, pack->get_buffer_length());
 
+	//Reset number of fragments and set first one
+	*nof = 0;
+
 	//Check DF bit
 	if(has_ipv4_DF_bit_set(ipv4)){
 		//Output a nice trace and drop
@@ -52,6 +55,7 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 
 		//Packet is not an IPv4 packet => DROP
 		bufferpool::release_buffer(*pkt);
+		goto FRAG_ERROR;
 	}
 
 	//Calculate sizes
@@ -60,9 +64,6 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 	payload_proc_len = 0;
 
 	ROFL_DEBUG(DRIVER_NAME"[ipv4_frag_filter] Packet %p, Ethernet+IPv4 length:%u.\n", *pkt, frag_common_len);
-	//Reset number of fragments and set first one
-	*nof = 0;
-
 	do{
 		if(*nof == 0){
 			frags[(*nof)] = *pkt;
@@ -100,8 +101,12 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 
 		//Readjust size and IPv4 header
 		frag_pack->set_buffer_length(frag_common_len+frag_chunk);
-		ipv4 =  (cpc_ipv4_hdr_t*)get_ipv4_hdr(frag_cs, 0);
-		set_ipv4_MF_bit(ipv4);
+		ipv4 = (cpc_ipv4_hdr_t*)get_ipv4_hdr(frag_cs, 0);
+		if((frag_chunk+payload_proc_len) != payload_total_len)
+			set_ipv4_MF_bit(ipv4);
+		else
+			clear_ipv4_MF_bit(ipv4);
+
 		gnu_linux_ipv4_set_offset(ipv4, gnu_linux_ipv4_get_offset(ipv4) + payload_proc_len/8);
 
 		ROFL_DEBUG(DRIVER_NAME"[ipv4_frag_filter] Generating fragment for pkt %p num: %u(%p), total length: %u, frag payload chunk: %u, processed: %u, frame starts at %p\n", *pkt, *nof, frags[(*nof)], frag_pack->get_buffer_length(), frag_chunk, payload_proc_len, frag_pack->get_buffer());
