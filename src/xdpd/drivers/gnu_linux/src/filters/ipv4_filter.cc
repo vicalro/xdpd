@@ -129,9 +129,8 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 
 	//Now that all fragments had no errors
 	//recalculate checksums
-	for(i=0;i<*nof;++i){
+	for(i=0;i<*nof;++i)
 		calculate_checksums_in_software(frags[i]);
-	}
 
 	ROFL_DEBUG(DRIVER_NAME"[ipv4_frag_filter] Successful fragmentation for pkt: %p. Resulting number of fragments: %u\n", *pkt, *nof);
 #ifdef DEBUG
