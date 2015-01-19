@@ -37,15 +37,24 @@ ROFL_BEGIN_DECLS
 */
 void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int* nof, datapacket_t** frags);
 
+//mgmt routines
 hal_result_t gnu_linux_enable_ipv4_frag_filter(const uint64_t dpid);
 hal_result_t gnu_linux_disable_ipv4_frag_filter(const uint64_t dpid);
 bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid);
 
 
+/**
+* @brief Reasemble IPv4 packet
+*
+* On success the reasembled, already classified packet is returned. On partial
+* reasembly, NULL is returned, and *pkt is also set to NULL.
+*/
+datapacket_t* gnu_linux_reas_ipv4_pkt(datapacket_t** pkt);
+
+//mgmt routines
 hal_result_t gnu_linux_enable_ipv4_reas_filter(const uint64_t dpid);
 hal_result_t gnu_linux_disable_ipv4_reas_filter(const uint64_t dpid);
 bool gnu_linux_ipv4_reas_filter_status(const uint64_t dpid);
-
 
 //C++ extern C
 ROFL_END_DECLS

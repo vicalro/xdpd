@@ -21,6 +21,9 @@
 namespace xdpd {
 namespace gnu_linux {
 
+//fwd decl
+struct ipv4_reas_state;
+
 typedef struct switch_platform_state {
 	//PKT_IN queue
 	circular_queue<datapacket_t>* pkt_in_queue;
@@ -33,6 +36,9 @@ typedef struct switch_platform_state {
 
 	//IPv4 reassembly filter on
 	bool ipv4_reas_filter_status;
+
+	//Reassembly state
+	struct ipv4_reas_state* reas_state;
 }switch_platform_state_t;
 
 }// namespace xdpd::gnu_linux
