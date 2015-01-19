@@ -223,6 +223,10 @@ protected:
 	*/
 	circular_queue<datapacket_t>* input_queue;
 
+	//Cache of filter status
+	bool sw_ipv4_frag_filter_status;
+	bool sw_ipv4_reas_filter_status;
+
 	/**
 	* Enque packet for transmission(this must be a non blocking call).
 	* Function cannot assume that q_id is a valid id, so it MUST do the appropiate

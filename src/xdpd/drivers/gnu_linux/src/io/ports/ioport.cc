@@ -114,7 +114,14 @@ rofl_result_t ioport::set_advertise_config(uint32_t advertised){
 void ioport::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 	datapacketx86* pack = (datapacketx86*)pkt->platform_state;
 
-	if(unlikely(pack->get_buffer_length() > mps)){
+	assert(of_port_state->attached_sw != NULL);
+
+	//Cache it locally
+	switch_platform_state_t* sw_state = (switch_platform_state_t*)(of_port_state->attached_sw->platform_state);
+	if(unlikely(sw_ipv4_frag_filter_status != sw_state->ipv4_frag_filter_status))
+		sw_ipv4_frag_filter_status = sw_state->ipv4_frag_filter_status;
+
+	if(unlikely(pack->get_buffer_length() > mps) && sw_ipv4_frag_filter_status){
 		unsigned int i, nof;
 		datapacket_t* frags[IPV4_MAX_FRAG];
 

@@ -163,12 +163,19 @@
 #define IPV4_MAX_FRAG 16
 
 /*
-* Other
+* Misc: usually useful for debugging purposes
 */
 
 //Log once every LOG_SUPRESSION_ITER for repetitive logging
 //Never comment this!
 #define LOG_SUPRESSION_ITER 1000
+
+//Hit assertion when packet exceeds interface MTU
+//#define ASSERT_PKT_EXCEEDS_MTU
+
+//Hit assertion when packet exceeds interface MTU, frag filter is ON and DF bit is set
+#define ASSERT_PKT_EXCEEDS_MTU_DF
+
 
 //Only enable if you want to profile code. This MUST NOT
 //be enabled in "production"

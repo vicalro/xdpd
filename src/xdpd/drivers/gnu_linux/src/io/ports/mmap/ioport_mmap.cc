@@ -340,7 +340,10 @@ unsigned int ioport_mmap::write(unsigned int q_id, unsigned int num_of_buckets){
 		if(unlikely(pkt_x86->get_buffer_length() > mps)){
 			//This should NEVER happen
 			ROFL_ERR(DRIVER_NAME"[mmap:%s] Packet length above the Max Packet Size (MPS). Packet length: %u, MPS %u.. discarding\n", of_port_state->name, pkt_x86->get_buffer_length(), mps);
+
+#ifdef ASSERT_PKT_EXCEEDS_MTU
 			assert(0);
+#endif
 
 			//Return buffer to the pool
 			bufferpool::release_buffer(pkt);

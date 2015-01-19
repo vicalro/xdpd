@@ -53,6 +53,10 @@ void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int*
 			ROFL_WARN(DRIVER_NAME"WARNING: %u IPv4 packets exceeding MPS of an interface were discarded due to DF bit set.\n", dropped);
 		}
 
+#ifdef ASSERT_PKT_EXCEEDS_MTU_DF
+		assert(0);
+#endif
+
 		//Packet is not an IPv4 packet => DROP
 		bufferpool::release_buffer(*pkt);
 		goto FRAG_ERROR;
