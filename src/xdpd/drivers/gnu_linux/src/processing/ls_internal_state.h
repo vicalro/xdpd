@@ -23,19 +23,19 @@ namespace gnu_linux {
 
 typedef struct switch_platform_state {
 	//PKT_IN queue
-	circular_queue<datapacket_t>* pkt_in_queue; 
+	circular_queue<datapacket_t>* pkt_in_queue;
 
-        //Packet storage pointer 
+        //Packet storage pointer
         datapacket_storage* storage;
-	
+
 	//IPv4 fragmentation filter
 	bool ipv4_frag_filter_status;
 
-	//IPv4 reassembly filter on 
+	//IPv4 reassembly filter on
 	bool ipv4_reas_filter_status;
 }switch_platform_state_t;
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 #endif /* LS_INTERNAL_STATE_H_ */
