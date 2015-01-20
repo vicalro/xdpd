@@ -22,7 +22,7 @@
 namespace xdpd {
 namespace gnu_linux {
 
-//#define PTHREAD_IMP 1 
+//#define PTHREAD_IMP 1
 
 //Exception
 class eCircularQueueInvalidSize{};
@@ -34,7 +34,7 @@ public:
 	//Constructor
 	circular_queue(long long unsigned int capacity);
 	~circular_queue(void);
-	
+
 	//Read
 	inline T* non_blocking_read(void);
 	//inline T* blocking_read(unsigned int seconds=0);
@@ -146,7 +146,7 @@ circular_queue<T>::~circular_queue(){
 	pthread_cond_destroy(&read_cond);
 	pthread_mutex_destroy(&mutex_readers);
 	pthread_mutex_destroy(&mutex_writers);
-	
+
 	delete[] elements;
 }
 
@@ -166,21 +166,21 @@ T* circular_queue<T>::non_blocking_read(void){
 		if (unlikely(is_empty(&writep, &read_cpy))) {
 			return NULL;
 		}
-		
+
 		to_return = *read_cpy;
-		
+
 		//Calculate readp+1
-		next = circ_inc_pointer(read_cpy); 
+		next = circ_inc_pointer(read_cpy);
 
 	//Try to set it atomically
 	}while(__sync_bool_compare_and_swap(&readp, read_cpy, next) != true);
 
 	return to_return;
-#else	
+#else
 	T* elem;
-	
+
 	pthread_mutex_lock(&mutex_readers);
-	
+
 	if (is_empty()) {
 		pthread_mutex_unlock(&mutex_readers);
 		return NULL;
@@ -191,7 +191,7 @@ T* circular_queue<T>::non_blocking_read(void){
 	readp = circ_inc_pointer(readp);
 
 	pthread_mutex_unlock(&mutex_readers);
-	
+
 	return elem;
 #endif
 }
@@ -214,15 +214,15 @@ rofl_result_t circular_queue<T>::non_blocking_write(T* elem){
 		if(unlikely(is_full(&write_cpy, &readp))) {
 			return ROFL_FAILURE;
 		}
-		
-		next = circ_inc_pointer(write_cpy); 
+
+		next = circ_inc_pointer(write_cpy);
 
 	//Try to set writers only index atomically
 	}while(__sync_bool_compare_and_swap(&_writep, write_cpy, next) != true);
 
 	*write_cpy = elem;
 
-	//Two stage commit, now let readers read it 
+	//Two stage commit, now let readers read it
 	while(__sync_bool_compare_and_swap(&writep, write_cpy, next) != true);
 
 	return ROFL_SUCCESS;
@@ -260,7 +260,7 @@ void circular_queue<T>::dump(void){
 	ROFL_INFO("\n");
 }
 
-}// namespace xdpd::gnu_linux 
+}// namespace xdpd::gnu_linux
 }// namespace xdpd
 
 #endif /* CIRCULAR_QUEUE_H_ */
