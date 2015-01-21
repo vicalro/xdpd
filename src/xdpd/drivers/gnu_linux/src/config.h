@@ -154,7 +154,7 @@
 
 //This compiles the support for allowing enabling/disabling
 //reassembly filters
-//#define COMPILE_IPV4_REAS_FILTER_SUPPORT
+#define COMPILE_IPV4_REAS_FILTER_SUPPORT
 
 //Fragments timeout
 #define IPV4_REAS_FRAG_DROP_TIMEOUT_S 2
@@ -175,6 +175,9 @@
 
 //Hit assertion when packet exceeds interface MTU, frag filter is ON and DF bit is set
 #define ASSERT_PKT_EXCEEDS_MTU_DF
+
+//Hit assertion on abnormal packet reassembly
+#define ASSERT_PKT_IPV4_REAS_ABNORMAL
 
 
 //Only enable if you want to profile code. This MUST NOT

@@ -18,11 +18,11 @@
 * state
 */
 
-namespace xdpd {
-namespace gnu_linux {
-
 //fwd decl
 struct ipv4_reas_state;
+
+namespace xdpd {
+namespace gnu_linux {
 
 typedef struct switch_platform_state {
 	//PKT_IN queue

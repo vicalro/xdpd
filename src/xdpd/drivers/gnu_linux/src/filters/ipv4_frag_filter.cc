@@ -18,14 +18,6 @@ using namespace xdpd::gnu_linux;
 
 #ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
 
-static inline void gnu_linux_ipv4_set_offset(cpc_ipv4_hdr_t* ipv4, uint16_t val){
-	*((uint16_t*)ipv4->offset_flags) |= HTONB16(val&0x1FFF);
-}
-
-static inline uint16_t gnu_linux_ipv4_get_offset(cpc_ipv4_hdr_t* ipv4){
-	return NTOHB16((*(uint16_t*)ipv4->offset_flags))&0x1FFF;
-}
-
 hal_result_t gnu_linux_enable_ipv4_frag_filter(const uint64_t dpid){
 
 	of_switch_t* sw = physical_switch_get_logical_switch_by_dpid(dpid);

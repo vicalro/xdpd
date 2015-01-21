@@ -16,10 +16,20 @@
 #include <rofl/datapath/pipeline/openflow/openflow1x/of1x_switch.h>
 
 #include "../processing/ls_internal_state.h"
+#include "../io/packet_classifiers/pktclassifier.h"
 #include "../config.h"
 
 //C++ extern C
 ROFL_BEGIN_DECLS
+
+static inline void gnu_linux_ipv4_set_offset(cpc_ipv4_hdr_t* ipv4, uint16_t val){
+	*((uint16_t*)ipv4->offset_flags) |= HTONB16(val&0x1FFF);
+}
+
+static inline uint16_t gnu_linux_ipv4_get_offset(cpc_ipv4_hdr_t* ipv4){
+	return NTOHB16((*(uint16_t*)ipv4->offset_flags))&0x1FFF;
+}
+
 
 /**
 * @brief Fragment IPv4 packet
@@ -48,6 +58,8 @@ bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid);
 *
 * On success the reasembled, already classified packet is returned. On partial
 * reasembly, NULL is returned, and *pkt is also set to NULL.
+*
+* The implementation is optimized for *ordered* reassemblies.
 */
 datapacket_t* gnu_linux_reas_ipv4_pkt(datapacket_t** pkt);
 
