@@ -1,6 +1,6 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-SUBDIRS = hal-imp io processing pipeline-imp util#Add more here... 
+SUBDIRS = filters hal-imp io processing pipeline-imp util#Add more here... 
 
 noinst_LTLIBRARIES = libxdpd_driver_gnu_linux_dpdk_src.la
 
@@ -24,4 +24,5 @@ libxdpd_driver_gnu_linux_dpdk_src_la_LIBADD = \
 		-lrte_timer\
 		-lrte_eal\
 		-lrte_kvargs\
+		-lrte_ip_frag\
 		-ldl

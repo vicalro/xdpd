@@ -22,6 +22,7 @@
 #include "port_state.h"
 #include "iface_manager.h"
 #include "../processing/processing.h"
+#include "../filters/ip_far.h"
 
 namespace xdpd {
 namespace gnu_linux_dpdk {
@@ -137,21 +138,48 @@ tx_pkt(switch_port_t* port, unsigned int queue_id, datapacket_t* pkt){
 	}
 #endif
 
-	ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Adding packet %p to queue %p (id: %u)\n", pkt, pkt_burst, rte_lcore_id());
+	if(/*far_filter_active*/ 1 ){
+		
+		struct rte_mbuf *pkts_out[RTE_LIBRTE_IP_FRAG_MAX_FRAG];//pointers to mbuf should be allocated. Mbufs are allocated in the function.
+		int i, num_fragments;
+		num_fragments = fragment_ip_packet(port, pkt, pkts_out);
+		for (i=0; i<num_fragments; i++){
+			ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Adding packet (fragmented) %p to queue %p (id: %u)\n", pkt, pkt_burst, rte_lcore_id());
 
-	//Enqueue
-	len = pkt_burst->len; 
-	pkt_burst->burst[len] = mbuf;
-	len++;
+			//Enqueue
+			len = pkt_burst->len; 
+			pkt_burst->burst[len] = pkts_out[i];
+			len++;
 
-	//If burst is full => trigger send
-	if ( unlikely(!tasks->active) || unlikely(len == IO_IFACE_MAX_PKT_BURST)) { //If buffer is full or mgmt core
+			//If burst is full => trigger send
+			if ( unlikely(!tasks->active) || unlikely(len == IO_IFACE_MAX_PKT_BURST)) { //If buffer is full or mgmt core
+				pkt_burst->len = len;
+				flush_port_queue_tx_burst(port, port_id, pkt_burst, queue_id);
+				return;
+			}
+
+			pkt_burst->len = len;
+		}
+		
+		
+	}else{
+
+		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Adding packet %p to queue %p (id: %u)\n", pkt, pkt_burst, rte_lcore_id());
+
+		//Enqueue
+		len = pkt_burst->len; 
+		pkt_burst->burst[len] = mbuf;
+		len++;
+
+		//If burst is full => trigger send
+		if ( unlikely(!tasks->active) || unlikely(len == IO_IFACE_MAX_PKT_BURST)) { //If buffer is full or mgmt core
+			pkt_burst->len = len;
+			flush_port_queue_tx_burst(port, port_id, pkt_burst, queue_id);
+			return;
+		}
+
 		pkt_burst->len = len;
-		flush_port_queue_tx_burst(port, port_id, pkt_burst, queue_id);
-		return;
 	}
-
-	pkt_burst->len = len;
 
 	return;
 }
