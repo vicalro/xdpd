@@ -1,11 +1,11 @@
 #ifndef CONFIG_SCOPE_PLUGIN_H
-#define CONFIG_SCOPE_PLUGIN_H 
+#define CONFIG_SCOPE_PLUGIN_H
 
 #include <assert.h>
-#include <libconfig.h++> 
-#include <map> 
-#include <sstream> 
-#include <vector> 
+#include <libconfig.h++>
+#include <map>
+#include <sstream>
+#include <vector>
 #include <rofl/common/croflexception.h>
 #include <rofl/common/utils/c_logger.h>
 
@@ -13,8 +13,8 @@
 * @file scope_plugin.h
 * @author Marc Sune<marc.sune (at) bisdn.de>
 *
-* @brief libconfig based scope 
-* 
+* @brief libconfig based scope
+*
 */
 
 namespace xdpd {
@@ -31,11 +31,11 @@ class eConfMandatoryScopeNotPresent: public rofl::RoflException {};
 class eConfUnknownElement: public rofl::RoflException {};
 
 class scope {
-	
+
 public:
 	scope(std::string scope_name, scope* parent, bool mandatory=false);
 	virtual ~scope();
-	
+
 	void execute(libconfig::Setting& setting, bool dry_run=false, bool priority_call=false);
 	void execute(libconfig::Config& setting, bool dry_run=false);
 
@@ -43,15 +43,15 @@ public:
 protected:
 
 	//Scope types
-	typedef enum { 
+	typedef enum {
 		//Normal scope, to be executed in the same order as added
 		//and after priority scopes
 		NORMAL_SCOPE,
-		
-		//Specially ordered scope, with priority over normal scopes 
+
+		//Specially ordered scope, with priority over normal scopes
 		//(executed before). Do not taint subscopes
 		PRIORITY_SCOPE,
-		
+
 		//Specially ordered scope, with priority over normal scopes
 		//(executed before). Executes the inner subscopes with the
 		//same priority.
@@ -63,16 +63,16 @@ protected:
 
 	//Processed flag
 	bool __processed;
-	
+
 	//Is scope really mandatory
 	bool mandatory;
-	
+
 	//Parent pointer
 	scope* parent;
-	
+
 	//Root Config element
 	libconfig::Config* __root_config;
-	
+
 	//Contents of the scope
 	std::map<unsigned int, scope*> priority_sub_scopes;
 	std::vector<scope*> sub_scopes;
@@ -88,7 +88,7 @@ protected:
 	//Geters
 	scope* get_subscope(const std::string& name){
 		std::vector<scope*>::iterator scope_iter;
-	
+
 		for (scope_iter = sub_scopes.begin(); scope_iter != sub_scopes.end(); ++scope_iter) {
 			if((*scope_iter)->name == name)
 				return *scope_iter;
@@ -104,12 +104,12 @@ protected:
 	}
 
 	//Get libconfig setting
-	 libconfig::Setting& __get_libconfig_setting(scope* sc){
+	libconfig::Setting& __get_libconfig_setting(scope* sc){
 
 		std::string name = sc->get_path();
 		scope* root = __get_root();
 		assert(root != NULL);
-		
+
 #ifdef DEBUG
 		//Get the setting if exists
 		if(root->__root_config->exists(name)){
@@ -118,7 +118,7 @@ protected:
 #endif
 		return root->__root_config->lookup(name);
 	}
-	
+
 	//Get scope object by its absolute path
 	//x.y.z
 	scope* get_scope_abs_path(const std::string& abs_path);
@@ -126,32 +126,32 @@ protected:
 	//Get our path
 	std::string get_path(){
 		std::stringstream ss("");
-		
+
 		if(parent){
 			std::string p = parent->get_path();
 			if( p.empty() == false )
 				ss<<p<<".";
 			ss<<this->name;
 		}
-		
+
 		return ss.str();
 	}
 
-	//Pre-execute hooks	
+	//Pre-execute hooks
 	virtual void pre_execute(libconfig::Config& config, bool dry_run){};
 	virtual void pre_execute(libconfig::Setting& setting, bool dry_run){};
-	
-	//Allow actions before and after parameter and scope validation	
+
+	//Allow actions before and after parameter and scope validation
 	virtual void pre_validate(libconfig::Config& config, bool dry_run){};
 	virtual void post_validate(libconfig::Config& config, bool dry_run){};
-	
+
 	virtual void pre_validate(libconfig::Setting& setting, bool dry_run){};
 	virtual void post_validate(libconfig::Setting& setting, bool dry_run){};
 
 };
 
 
-}// namespace xdpd 
+}// namespace xdpd
 
 #endif /* CONFIG_SCOPE_PLUGIN_H_ */
 

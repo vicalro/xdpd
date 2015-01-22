@@ -6,7 +6,7 @@ using namespace rofl;
 #include "config.h"
 
 scope::scope(std::string scope_name, scope* parent, bool mandatory){
-	
+
 	//Assign basic
 	this->name = scope_name;
 	this->parent = parent;
@@ -22,12 +22,12 @@ scope::~scope(){
 	for (scope_iter = sub_scopes.begin(); scope_iter != sub_scopes.end(); ++scope_iter)
 		delete *scope_iter;
 	sub_scopes.clear();
-		
+
 }
 
 
 scope* scope::get_scope_abs_path(const std::string& abs_path){
-	
+
 	//First recover the root scope
 	scope* root = __get_root();
 	scope* curr = NULL;
@@ -39,7 +39,7 @@ scope* scope::get_scope_abs_path(const std::string& abs_path){
 	std::stringstream ss(abs_path);
 	std::string item;
 	char delim = '.';
-        
+
 	//Split the absolute path
 	while (std::getline(ss, item, delim)) {
 		if(!curr){
@@ -48,10 +48,10 @@ scope* scope::get_scope_abs_path(const std::string& abs_path){
 			curr = curr->get_subscope(item);
 		}
 		if(!curr)
-			return NULL;	
-	} 
+			return NULL;
+	}
 
-	return curr;	
+	return curr;
 }
 
 void scope::register_priority_subscope(const std::string& _name, scope* sc, unsigned int priority, bool taint_subscopes){
@@ -71,18 +71,18 @@ void scope::register_priority_subscope(const std::string& _name, scope* sc, unsi
 	//Check
 	if( root->priority_sub_scopes.find(priority) == root->priority_sub_scopes.end() ){
 		//Add
-		root->priority_sub_scopes[priority] = sc;		
+		root->priority_sub_scopes[priority] = sc;
 	}else{
 		//An element is register with the same priori
 		ROFL_ERR(CONF_PLUGIN_ID "%s: ERROR; failed to add scope '%s' with priority %d. Scope '%s' is already registered with this priority\n", sc->get_path().c_str(), priority, root->priority_sub_scopes[priority]->get_path().c_str());
 		assert(0);
 		throw eConfDuplicatedPriority();
 	}
-}	
+}
 
 void scope::register_subscope(const std::string& _name, scope* sc){
 
-	//Look for the key in subscopes 
+	//Look for the key in subscopes
 	if(get_subscope(sc->name))
 		throw eConfDuplicatedScope();
 
@@ -93,7 +93,7 @@ void scope::register_parameter(std::string _name, bool mandatory){
 
 	if(parameters.find(_name) != parameters.end())
 		throw eConfDuplicatedParameter();
-	
+
 
 	parameters[_name] = mandatory;
 }
@@ -120,18 +120,18 @@ void scope::execute(libconfig::Setting& setting, bool dry_run, bool priority_cal
 				if(parameters.find(aux) != parameters.end())
 					continue;
 
-				//Look for the key in subscopes 
+				//Look for the key in subscopes
 				if(get_subscope(aux))
 					continue;
-		
+
 				//Not found, so not recognised. Throw exception
 				ROFL_ERR(CONF_PLUGIN_ID "%s: ERROR, unknow parameter or scope '%s'. Perhaps an old configuration file syntax?\n", setting.getPath().c_str(), aux.c_str());
 
 				throw eConfUnknownElement();
-		
+
 			}
 		}
-		
+
 		//Go through parameters and validate if mandatory
 		std::map<std::string, bool>::iterator param_iter;
 		for (param_iter = parameters.begin(); param_iter != parameters.end(); ++param_iter) {
@@ -152,27 +152,27 @@ void scope::execute(libconfig::Setting& setting, bool dry_run, bool priority_cal
 			//Make it easy
 			sc = *scope_iter;
 
-			if(	sc->mandatory && 
-				(	! setting.exists(sc->name) || 
+			if(	sc->mandatory &&
+				(	! setting.exists(sc->name) ||
 					! setting[sc->name].isGroup()
 				)
 			){
 				ROFL_ERR(CONF_PLUGIN_ID "%s: mandatory subscope '%s' not found\n", setting.getPath().c_str(), sc->name.c_str());
 				throw eConfMandatoryParameterNotPresent();
 			}
-			
+
 			if(setting.exists(sc->name)){
 				ROFL_DEBUG_VERBOSE(CONF_PLUGIN_ID "[%s] Calling 'execute()'\n", sc->get_path().c_str());
 				sc->execute(setting[sc->name], dry_run);
 			}
 		}
 	}
-		
+
 	if(this->__processed == false){
 		//Call post-hook
 		ROFL_DEBUG_VERBOSE(CONF_PLUGIN_ID "[%s] Calling 'post_validate()'\n", get_path().c_str());
 		post_validate(setting, dry_run);
-		
+
 		this->__processed = true;
 	}
 }
@@ -192,7 +192,7 @@ void scope::execute(libconfig::Config& config, bool dry_run){
 			p_iter->second->execute(__get_libconfig_setting(p_iter->second), dry_run, true);
 		}catch(libconfig::SettingNotFoundException& e){
 			ROFL_DEBUG_VERBOSE(CONF_PLUGIN_ID "[%s] Priority scope with p(%u) NOT present.\n", p_iter->second->get_path().c_str(), p_iter->first);
-			
+
 		}
 	}
 
@@ -208,23 +208,23 @@ void scope::execute(libconfig::Config& config, bool dry_run){
 			throw eConfMandatoryParameterNotPresent();
 		}
 	}
-	
+
 	//Go through sub scopes
 	std::vector<scope*>::iterator scope_iter;
 	scope* sc;
-	
+
 	for (scope_iter = sub_scopes.begin(); scope_iter != sub_scopes.end(); ++scope_iter) {
 
 		//Make it easy
 		sc = *scope_iter;
 
-		if(	sc->mandatory && 
-			(	! config.exists(sc->name) || 
+		if(	sc->mandatory &&
+			(	! config.exists(sc->name) ||
 				! config.lookup(sc->name).isGroup()
 			)
 		){
 			ROFL_ERR(CONF_PLUGIN_ID "%s: mandatory subscope '%s' not found\n", name.c_str(), sc->name.c_str());
-	
+
 			throw eConfMandatoryParameterNotPresent();
 		}
 		if(config.exists(sc->name)){
@@ -233,7 +233,7 @@ void scope::execute(libconfig::Config& config, bool dry_run){
 		}
 	}
 
-	
+
 	//Call post-hook
 	ROFL_DEBUG_VERBOSE(CONF_PLUGIN_ID "[%s] Calling 'post_validate()'\n", get_path().c_str());
 	post_validate(config, dry_run);
