@@ -455,8 +455,9 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 			set->num_of_holes = 1;
 		}
 
-		//Set offset to 0
+		//Set offset to 0 and clear MFs bit
 		gnu_linux_ipv4_set_offset(ipv4, 0);
+		clear_ipv4_MF_bit(ipv4);
 	}else{
 		//Recover chunk length
 		chunk_len = pack->get_buffer_length() - set->ipv4_payload_offset;
