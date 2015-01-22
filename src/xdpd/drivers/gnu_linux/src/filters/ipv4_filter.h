@@ -63,6 +63,11 @@ bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid);
 */
 datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_ipv4_hdr_t* ipv4);
 
+/**
+* Expire incomplete fragments
+*/
+void gnu_linux_reas_ipv4_expire_frag_sets(of_switch_t* sw);
+
 //mgmt routines
 hal_result_t gnu_linux_enable_ipv4_reas_filter(const uint64_t dpid);
 hal_result_t gnu_linux_disable_ipv4_reas_filter(const uint64_t dpid);

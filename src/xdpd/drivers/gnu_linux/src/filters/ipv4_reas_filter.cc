@@ -24,7 +24,6 @@ using namespace xdpd::gnu_linux;
 
 #ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
 
-//Serialize enable/disable operations
 static pthread_mutex_t reas_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define IPV4_REAS_HT_SIZE  2<<16
@@ -232,7 +231,7 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 	struct ipv4_reas_key key;
 	uint16_t ht_index;
 	ipv4_reas_ht_entry_t* entry;
-	ipv4_reas_set_t *set=NULL, *it;
+	ipv4_reas_set_t *set;
 
 	//Compose key
 	key.ip_dst = *get_ipv4_dst(ipv4);
@@ -246,9 +245,8 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 
 	pthread_rwlock_rdlock(&entry->rwlock);
 	//Look for the right bucket
-	TAILQ_FOREACH(it, &entry->buckets, __bucket_ll) {
+	TAILQ_FOREACH(set, &entry->buckets, __bucket_ll) {
 		if( (*(uint64_t*)&set->key) == (*((uint64_t*)&key))){
-			set = it;
 			pthread_mutex_lock(&set->mutex);
 			break;
 		}
@@ -271,11 +269,14 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 
 			//Mark set as being used
 			pthread_mutex_lock(&set->mutex);
+			set->num_of_holes = 0;
+			set->pkt = NULL;
+			set->key = key;
+			set->entry = entry;
 		}else{
 			pthread_mutex_unlock(&state->pool.mutex);
 		}
 
-		set->num_of_holes = 0;
 	}
 	return set;
 }
@@ -289,7 +290,7 @@ static void release_frag_set(ipv4_reas_state_t* state, ipv4_reas_set_t* set){
 	//Remove from expire list
 	pthread_mutex_lock(&state->mutex);
 	TAILQ_REMOVE(&state->to_expire, set, __pool_ll);
-	pthread_mutex_lock(&state->mutex);
+	pthread_mutex_unlock(&state->mutex);
 
 	//Put it back to the pool
 	pthread_mutex_lock(&state->pool.mutex);
@@ -530,6 +531,7 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 		//Reclassify the packet
 		classify_packet(&pack_reas->clas_state, pack_reas->get_buffer(), pack_reas->get_buffer_length(), pack_reas->clas_state.port_in, 0);
 
+		set_recalculate_checksum(&pack_reas->clas_state, RECALCULATE_IPV4_CHECKSUM_IN_SW);
 		ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Successfully reassembled packet %p total length:%u.\n", reas_pkt, pack_reas->get_buffer_length());
 		goto IPV4_REAS_END;
 	}else{
@@ -550,8 +552,9 @@ IPV4_REAS_END:
 	return reas_pkt;
 }
 
-void gnu_linux_expire_frag_sets(of_switch_t* sw){
+void gnu_linux_reas_ipv4_expire_frag_sets(of_switch_t* sw){
 
+	unsigned int expired = 0;
 	ipv4_reas_set_t *it;
 	time_t now = time(NULL);
 	double diff;
@@ -565,6 +568,7 @@ void gnu_linux_expire_frag_sets(of_switch_t* sw){
 	if(unlikely(state == NULL))
 		goto IP_FRAG_EXPIRE_END;
 
+	ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Performing partially reassembled packet expirations for LSI %s.\n", sw->name);
 	//Read lock
 	pthread_rwlock_rdlock(&state->rwlock);
 	pthread_mutex_lock(&state->mutex);
@@ -577,9 +581,13 @@ void gnu_linux_expire_frag_sets(of_switch_t* sw){
 		//Check if it expired
 		diff = difftime(now,it->last_seen);
 		if(unlikely(diff >= IPV4_REAS_FRAG_TIMEOUT_S)){
+			ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Partially reassembled packet %p (curr. computed total length:%u) expired.\n", it->pkt, ((datapacketx86*)it->pkt->platform_state)->get_buffer_length());
 			//Release frag
+			assert(it->pkt);
+			bufferpool::release_buffer(it->pkt);
 			release_frag_set(state, it);
 			pthread_mutex_unlock(&it->mutex);
+			expired++;
 		}else{
 			//All other sets are newer, break
 			pthread_mutex_unlock(&it->mutex);
@@ -589,7 +597,8 @@ void gnu_linux_expire_frag_sets(of_switch_t* sw){
 	pthread_mutex_unlock(&state->mutex);
 	pthread_rwlock_unlock(&state->rwlock);
 IP_FRAG_EXPIRE_END:
-	pthread_mutex_lock(&reas_mutex);
+	pthread_mutex_unlock(&reas_mutex);
+	ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Partially reassembled packets expired for LSI '%s':%u.\n", sw->name, expired);
 }
 
 #endif //COMPILE_IPV4_REAS_FILTER_SUPPORT

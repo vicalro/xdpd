@@ -21,7 +21,10 @@
 #include <rofl/datapath/pipeline/physical_switch.h>
 #include <rofl/datapath/hal/driver.h>
 #include <rofl/datapath/hal/cmm.h>
+
+#include "config.h"
 #include "processing/ls_internal_state.h"
+#include "filters/ipv4_filter.h"
 #include "io/bufferpool.h"
 #include "io/datapacket_storage.h"
 #include "io/pktin_dispatcher.h"
@@ -216,11 +219,12 @@ int process_timeouts()
 				}
 				last_time_pool_checked = now;
 			}
-
-			if(get_time_difference_ms(&now, &last_time_ipv4_reas_checked)>= (IPV4_REAS_FRAG_TIMEOUT_S*1000)){
-
+#ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
+			if(get_time_difference_ms(&now, &last_time_ipv4_reas_checked) >= (IPV4_REAS_FRAG_TIMEOUT_S*1000)){
+				gnu_linux_reas_ipv4_expire_frag_sets(logical_switches[i]);
 				last_time_ipv4_reas_checked = now;
 			}
+#endif
 		}
 	}
 
