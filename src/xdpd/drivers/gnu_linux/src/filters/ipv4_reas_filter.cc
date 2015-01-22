@@ -274,6 +274,8 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 			set->key = key;
 			set->entry = entry;
 		}else{
+			//TODO: implement a more aggressive strategy:
+			//reelease the oldest N fragments and retry
 			pthread_mutex_unlock(&state->pool.mutex);
 		}
 
