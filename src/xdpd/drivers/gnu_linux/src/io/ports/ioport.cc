@@ -42,6 +42,8 @@ ioport::ioport(switch_port_t* of_ps, unsigned int q_num){
 		ROFL_ERR(DRIVER_NAME" Unable to initialize ioport's rwlock\n");
 		assert(0);
 	}
+
+	sw_ipv4_frag_filter_status = sw_ipv4_reas_filter_status = false;
 }
 ioport::~ioport(){
 	//Drain queues first
