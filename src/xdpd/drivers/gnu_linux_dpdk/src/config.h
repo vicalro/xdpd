@@ -115,6 +115,8 @@
 	#define PKT_TO_NF_THRESHOLD 	200
 #endif
 
-
+//This compiles the support for allowing enabling/disabling
+//fragmentation filters
+#define COMPILE_IP_FRAG_FILTER_SUPPORT
 
 #endif //XDPD_GNU_LINUX_XDPD_CONFIG_H

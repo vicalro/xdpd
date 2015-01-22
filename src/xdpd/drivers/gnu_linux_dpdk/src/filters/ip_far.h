@@ -26,7 +26,7 @@ extern struct rte_mempool *pool_direct;
 extern struct rte_mempool *pool_indirect;
 
 static inline
-int32_t fragment_ip_packet(switch_port_t* port, datapacket_t* pkt, struct rte_mbuf **pkts_out){
+int32_t gnu_linux_dpdk_frag_ip_packet(switch_port_t* port, datapacket_t* pkt, struct rte_mbuf **pkts_out){
 	uint16_t mtu_size;
 	unsigned int port_id = ((dpdk_port_state_t*)port->platform_port_state)->port_id;
 	datapacket_dpdk_t * dpkt = (datapacket_dpdk_t*)pkt->platform_state;
