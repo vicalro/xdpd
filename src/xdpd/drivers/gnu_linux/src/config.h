@@ -157,7 +157,7 @@
 #define COMPILE_IPV4_REAS_FILTER_SUPPORT
 
 //Fragments timeout
-#define IPV4_REAS_FRAG_DROP_TIMEOUT_S 2
+#define IPV4_REAS_FRAG_TIMEOUT_S 2
 
 //Maximum fragments
 #define IPV4_MAX_FRAG 16

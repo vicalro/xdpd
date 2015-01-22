@@ -46,12 +46,15 @@ struct ipv4_reas_hole{
 	unsigned int end;
 };
 
+//fwd decl
+struct ipv4_reas_ht_entry;
+
 typedef struct ipv4_reas_set{
 	//Key
 	struct ipv4_reas_key key;
 
 	//Entry
-	TAILQ_HEAD(,ipv4_reas_set) *entry;
+	struct ipv4_reas_ht_entry *entry;
 
 	//Holes
 	unsigned int num_of_holes;
@@ -59,6 +62,9 @@ typedef struct ipv4_reas_set{
 
 	//Partially reassembled packet
 	datapacket_t* pkt;
+
+	//IPv4 offset from the beginning of the pkt
+	cpc_ipv4_hdr_t* ipv4_hdr;
 
 	//IPv4 payload offset from the beginning of the pkt
 	unsigned int ipv4_payload_offset;
@@ -191,7 +197,7 @@ static void gnu_linux_destroy_ipv4_reas(ipv4_reas_state_t* state){
 		TAILQ_REMOVE(&state->pool.free, set, __pool_ll);
 		free(set);
 	}
-	free(&state->rwlock);
+	free(state);
 }
 
 //hash algorithm (fnv1a)
@@ -238,30 +244,56 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 	//Recover
 	entry = &state->frag_ht[ht_index];
 
+	pthread_rwlock_rdlock(&entry->rwlock);
 	//Look for the right bucket
 	TAILQ_FOREACH(it, &entry->buckets, __bucket_ll) {
 		if( (*(uint64_t*)&set->key) == (*((uint64_t*)&key))){
 			set = it;
+			pthread_mutex_lock(&set->mutex);
 			break;
 		}
 	}
+	pthread_rwlock_unlock(&entry->rwlock);
 
 	if(!set){
 		//Allocate a new set
 		pthread_mutex_lock(&state->pool.mutex);
 		set = TAILQ_FIRST(&state->pool.free);
 		if(likely(set != NULL)){
+			//Remove from the pool, and quickly release
 			TAILQ_REMOVE( &state->pool.free, set, __pool_ll);
-			set->num_of_holes = 0;
+			pthread_mutex_unlock(&state->pool.mutex);
+
+			//Add it to the HT entry
+			pthread_rwlock_wrlock(&entry->rwlock);
+			TAILQ_INSERT_TAIL(&entry->buckets, set, __bucket_ll);
+			pthread_rwlock_unlock(&entry->rwlock);
+
+			//Mark set as being used
+			pthread_mutex_lock(&set->mutex);
+		}else{
+			pthread_mutex_unlock(&state->pool.mutex);
 		}
-		pthread_mutex_unlock(&state->pool.mutex);
+
+		set->num_of_holes = 0;
 	}
 	return set;
 }
 
 static void release_frag_set(ipv4_reas_state_t* state, ipv4_reas_set_t* set){
+	//Remove from the HT
+	pthread_rwlock_wrlock(&set->entry->rwlock);
+	TAILQ_REMOVE(&set->entry->buckets, set, __bucket_ll);
+	pthread_rwlock_unlock(&set->entry->rwlock);
+
+	//Remove from expire list
+	pthread_mutex_lock(&state->mutex);
+	TAILQ_REMOVE(&state->to_expire, set, __pool_ll);
+	pthread_mutex_lock(&state->mutex);
+
+	//Put it back to the pool
 	pthread_mutex_lock(&state->pool.mutex);
-	TAILQ_INSERT_TAIL( &state->pool.free, set, __pool_ll);
+	TAILQ_INSERT_TAIL(&state->pool.free, set, __pool_ll);
 	pthread_mutex_unlock(&state->pool.mutex);
 }
 
@@ -375,9 +407,6 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 		goto IPV4_REAS_END;
 	}
 
-	//Lock the set
-	pthread_mutex_lock(&set->mutex);
-
 	///Check if we are the first ones
 	if(!set->pkt){
 		//We will hold the entire pkt
@@ -385,11 +414,13 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 
 		//Set common elements of the fragments
 		set->ipv4_payload_offset = ((uint8_t*)ipv4 + (ipv4->ihlvers&0x0F)*4) - pack->get_buffer();
+		set->ipv4_hdr = ipv4;
 
 		//Recover chunk length
 		chunk_len = pack->get_buffer_length() - set->ipv4_payload_offset;
 		chunk_offset = (gnu_linux_ipv4_get_offset(ipv4)*8);
 
+		ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Starting packet %p reassembly total length:%u, chunk length: %u offset: %u.\n", *pkt, pack->get_buffer_length(), chunk_len, chunk_offset);
 		//Set holes and memcpy
 		if(unlikely(gnu_linux_ipv4_get_offset(ipv4) != 0)){
 			//Move chunk in the unlikely case we are not the first
@@ -422,14 +453,18 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 			set->holes[0].end = IPV4_REAS_MAX_LAST;
 			set->num_of_holes = 1;
 		}
+
+		//Set offset to 0
+		gnu_linux_ipv4_set_offset(ipv4, 0);
 	}else{
 		//Recover chunk length
 		chunk_len = pack->get_buffer_length() - set->ipv4_payload_offset;
 		chunk_offset = (gnu_linux_ipv4_get_offset(ipv4)*8);
 		pack_reas = (datapacketx86*)set->pkt->platform_state;
 
+		ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Assembling fragment for packet %p (fragment: %p) total length:%u, chunk length: %u offset: %u.\n", set->pkt, *pkt, pack->get_buffer_length(), chunk_len, chunk_offset);
 		//Find fragment
-		for(i=0;i<IPV4_MAX_FRAG;i++){
+		for(i=0;i<set->num_of_holes;i++){
 			if(set->holes[i].start <= chunk_offset &&
 				set->holes[i].end > (chunk_offset+chunk_len))
 				break;
@@ -440,8 +475,18 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 #ifdef ASSERT_PKT_IPV4_REAS_ABNORMAL
 			assert(0);
 #endif
+			//Cleanup
 			bufferpool::release_buffer(*pkt);
-			//TODO: remove everything and throw fragment
+			bufferpool::release_buffer(set->pkt);
+			pthread_mutex_unlock(&set->mutex);
+			release_frag_set(ls_int->reas_state, set);
+
+			//Remove for the expirations list
+			pthread_mutex_lock(&ls_int->reas_state->mutex);
+			TAILQ_REMOVE(&ls_int->reas_state->to_expire, set, __pool_ll);
+			pthread_mutex_unlock(&ls_int->reas_state->mutex);
+
+			goto IPV4_REAS_END;
 		}
 
 		//Check if it is the next consecutive fragment
@@ -463,19 +508,15 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 				set->num_of_holes--;
 			}
 		}else{
-			//Split fragment
 			assert(0);
-			//
-			// FIXME TODO IMPLEMENT
-			//
 		}
+
+		//Add chunk len to the total length
+		set->ipv4_hdr->length = HTONB16((NTOHB16(set->ipv4_hdr->length) + chunk_len));
+
+		//Drop partial fragment
 		bufferpool::release_buffer(*pkt);
 	}
-
-	//Remove for the expirations list
-	pthread_mutex_lock(&ls_int->reas_state->mutex);
-	TAILQ_REMOVE(&ls_int->reas_state->to_expire, set, __pool_ll);
-	pthread_mutex_unlock(&ls_int->reas_state->mutex);
 
 	//If it is the last fragments
 	if(!set->num_of_holes){
@@ -484,25 +525,71 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 
 		//Return set
 		release_frag_set(ls_int->reas_state, set);
+		pthread_mutex_unlock(&set->mutex);
 
 		//Reclassify the packet
 		classify_packet(&pack_reas->clas_state, pack_reas->get_buffer(), pack_reas->get_buffer_length(), pack_reas->clas_state.port_in, 0);
+
+		ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Successfully reassembled packet %p total length:%u.\n", reas_pkt, pack_reas->get_buffer_length());
+		goto IPV4_REAS_END;
 	}else{
 		//Reeschedule set for expirations
-		//set->last_seen = ;
+		set->last_seen = time(NULL);
+
+		//Remove for the expirations list and ad to tail
 		pthread_mutex_lock(&ls_int->reas_state->mutex);
+		TAILQ_REMOVE(&ls_int->reas_state->to_expire, set, __pool_ll);
 		TAILQ_INSERT_TAIL(&ls_int->reas_state->to_expire, set, __pool_ll);
 		pthread_mutex_unlock(&ls_int->reas_state->mutex);
 	}
-
 	pthread_mutex_unlock(&set->mutex);
-IPV4_REAS_END:
 
+IPV4_REAS_END:
 	pthread_rwlock_unlock(&ls_int->reas_state->rwlock);
 	*pkt = NULL;
 	return reas_pkt;
 }
 
+void gnu_linux_expire_frag_sets(of_switch_t* sw){
 
+	ipv4_reas_set_t *it;
+	time_t now = time(NULL);
+	double diff;
+
+	//Prevent disabling of the reas filter while expiration execution
+	pthread_mutex_lock(&reas_mutex);
+
+	//State
+	ipv4_reas_state_t* state = ((switch_platform_state_t*)sw->platform_state)->reas_state;
+
+	if(unlikely(state == NULL))
+		goto IP_FRAG_EXPIRE_END;
+
+	//Read lock
+	pthread_rwlock_rdlock(&state->rwlock);
+	pthread_mutex_lock(&state->mutex);
+	TAILQ_FOREACH(it, &state->to_expire, __pool_ll) {
+		//Try to lock,
+		if(pthread_mutex_trylock(&it->mutex) != 0){
+			//Being used, skip
+			continue;
+		}
+		//Check if it expired
+		diff = difftime(now,it->last_seen);
+		if(unlikely(diff >= IPV4_REAS_FRAG_TIMEOUT_S)){
+			//Release frag
+			release_frag_set(state, it);
+			pthread_mutex_unlock(&it->mutex);
+		}else{
+			//All other sets are newer, break
+			pthread_mutex_unlock(&it->mutex);
+			break;
+		}
+	}
+	pthread_mutex_unlock(&state->mutex);
+	pthread_rwlock_unlock(&state->rwlock);
+IP_FRAG_EXPIRE_END:
+	pthread_mutex_lock(&reas_mutex);
+}
 
 #endif //COMPILE_IPV4_REAS_FILTER_SUPPORT
