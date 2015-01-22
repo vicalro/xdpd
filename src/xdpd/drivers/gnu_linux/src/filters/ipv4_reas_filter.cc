@@ -569,7 +569,7 @@ void gnu_linux_reas_ipv4_expire_frag_sets(of_switch_t* sw){
 	if(unlikely(state == NULL))
 		goto IP_FRAG_EXPIRE_END;
 
-	ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Performing partially reassembled packet expirations for LSI %s.\n", sw->name);
+	ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Checking for partially IPv4 reassembled packets that have expired in LSI '%s'.\n", sw->name);
 	//Read lock
 	pthread_rwlock_rdlock(&state->rwlock);
 	pthread_mutex_lock(&state->mutex);
@@ -597,9 +597,9 @@ void gnu_linux_reas_ipv4_expire_frag_sets(of_switch_t* sw){
 	}
 	pthread_mutex_unlock(&state->mutex);
 	pthread_rwlock_unlock(&state->rwlock);
+	ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Partially reassembled packets expired for LSI '%s':%u.\n", sw->name, expired);
 IP_FRAG_EXPIRE_END:
 	pthread_mutex_unlock(&reas_mutex);
-	ROFL_DEBUG(DRIVER_NAME"[ipv4_reas_filter] Partially reassembled packets expired for LSI '%s':%u.\n", sw->name, expired);
 }
 
 #endif //COMPILE_IPV4_REAS_FILTER_SUPPORT
