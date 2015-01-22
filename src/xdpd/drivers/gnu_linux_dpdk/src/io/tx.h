@@ -144,12 +144,16 @@ tx_pkt(switch_port_t* port, unsigned int queue_id, datapacket_t* pkt){
 
 #ifdef COMPILE_IP_FRAG_FILTER_SUPPORT
 	num_fragments = gnu_linux_dpdk_frag_ip_packet(port, pkt, pkts_out);
+	if(num_fragments){
+		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Packet %p was fragmented into %d fragments\n", pkt, num_fragments);
+	}
 	(void) mbuf; //avoid warning unused variable
+	for(i=0;i<num_fragments; i++){
 #else
 	pkts_out[0] = mbuf;
 #endif
-	for(i=0;i<num_fragments; i++){
-		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Adding packet (fragmented) %p to queue %p (id: %u)\n", pkt, pkt_burst, rte_lcore_id());
+	
+		ROFL_DEBUG_VERBOSE(DRIVER_NAME"[io] Adding packet %p to queue %p (id: %u)\n", pkt, pkt_burst, rte_lcore_id());
 
 		//Enqueue
 		len = pkt_burst->len; 
@@ -164,8 +168,9 @@ tx_pkt(switch_port_t* port, unsigned int queue_id, datapacket_t* pkt){
 		}
 
 		pkt_burst->len = len;
+#ifdef COMPILE_IP_FRAG_FILTER_SUPPORT
 	}
-	
+#endif
 	return;
 }
 

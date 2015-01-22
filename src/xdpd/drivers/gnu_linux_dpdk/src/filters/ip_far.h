@@ -40,14 +40,12 @@ int32_t gnu_linux_dpdk_frag_ip_packet(switch_port_t* port, datapacket_t* pkt, st
 	
 	if(get_buffer_length_dpdk(dpkt) > mtu_size){
 		void* ipv4 = get_ipv4_hdr( &(((datapacket_dpdk_t*)pkt->platform_state)->clas_state), 0);
-		if (ipv4)
-		{
+		if (ipv4){
 			num_fragments = rte_ipv4_fragment_packet( dpkt->mbuf, pkts_out, nb_pkts_out, mtu_size, pool_direct, pool_indirect);
 		}
-		
+		// TODO handle errors!
 		void* ipv6 = get_ipv6_hdr( &(((datapacket_dpdk_t*)pkt->platform_state)->clas_state), 0);
-		if (ipv6)
-		{
+		if (ipv6){
 			num_fragments = rte_ipv6_fragment_packet( dpkt->mbuf, pkts_out, nb_pkts_out, mtu_size, pool_direct, pool_indirect);
 		}
 		
@@ -61,35 +59,53 @@ int32_t gnu_linux_dpdk_frag_ip_packet(switch_port_t* port, datapacket_t* pkt, st
 
 /*
 static inline
-void fragment_ip_mbuf(unsigned int port_id, struct rte_mbuf* mbuf_in){
+int32_t gnu_linux_dpdk_frag_ip_packet(unsigned int port_id, struct rte_mbuf* mbuf_in, struct rte_mbuf **pkts_out){
 	uint16_t mtu_size;
 	//pointers to mbuf should be allocated. Mbufs are allocated in the function.
-	struct rte_mbuf *pkts_out[RTE_LIBRTE_IP_FRAG_MAX_FRAG];
-	uint16_t nb_pkts_out;
-	int32_t i, num_fragments=0;
+	
+	uint16_t nb_pkts_out = RTE_LIBRTE_IP_FRAG_MAX_FRAG;
+	int32_t num_fragments=0;
 	
 	if( rte_eth_dev_get_mtu( port_id , &mtu_size) < 0 ){
 		//invalid port -> ERROR
 	}
-	
 	if(rte_pktmbuf_pkt_len(mbuf_in) > mtu_size){
-		void* ipv4 = NULL; //HOW DO WE GET CLAS STATE?
-		if (ipv4)
-		{
-			num_fragments = rte_ipv4_fragment_packet( dpkt->mbuf, pkts_out, nb_pkts_out, mtu_size, pool_direct, pool_indirect);
+		if (mbuf_in->ol_flags & PKT_RX_IPV4_HDR){
+			num_fragments = rte_ipv4_fragment_packet( mbuf_in, pkts_out, nb_pkts_out, mtu_size, pool_direct, pool_indirect);
 		}
-		
-		void* ipv6 = NULL; //HOW DO WE GET CLAS STATE?
-		if (ipv6)
-		{
-			num_fragments = rte_ipv6_fragment_packet( dpkt->mbuf, pkts_out, nb_pkts_out, mtu_size, pool_direct, pool_indirect);
+		// TODO handle errors!
+		if (mbuf_in->ol_flags & PKT_RX_IPV6_HDR){
+			num_fragments = rte_ipv6_fragment_packet( mbuf_in, pkts_out, nb_pkts_out, mtu_size, pool_direct, pool_indirect);
 		}
 		
 	}
+	return num_fragments;
+}
 
-	for(i=0; i<num_fragments; i++){
-		tx_pkt(port, dpkt->output_queue, pkt);
+static inline
+int32_t gnu_linux_dpdk_frag_burst(unsigned int port_id, int32_t len_in, struct rte_mbuf **burst_in, struct rte_mbuf **burst_out){
+	struct rte_mbuf *pkts_out[RTE_LIBRTE_IP_FRAG_MAX_FRAG];
+	int i,j, len_out=0, num_fragments;
+	
+	for(i=0; i<len_in; i++){
+		num_fragments = gnu_linux_dpdk_frag_ip_packet(port_id, burst_in[i], pkts_out);
+		
+		if(num_fragments<0){
+			//error
+			return num_fragments;
+		}
+		
+		if(num_fragments>0){
+			for(j=0; j<num_fragments; j++){
+				burst_out[len_out] = pkts_out[j];
+				len_out++;
+			}
+		}else{
+			burst_out[len_out] = burst_in[i];
+			len_out++;
+		}
 	}
+	return len_out;
 }
 */
 static inline
