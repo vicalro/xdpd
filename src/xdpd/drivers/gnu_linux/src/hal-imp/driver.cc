@@ -234,6 +234,11 @@ hal_result_t hal_driver_destroy_switch_by_dpid(const uint64_t dpid){
 		}
 	}
 
+#ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
+	//Stop reassembly filter
+	gnu_linux_disable_ipv4_reas_filter(dpid);
+#endif
+
 	//Drain existing packet ins
 	drain_packet_ins(sw);
 
