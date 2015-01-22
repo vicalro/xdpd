@@ -148,4 +148,35 @@ void ioport::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 		enqueue_packet__(pkt, q_id);
 	}
 }
-#endif
+#endif //COMPILE_IPV4_FRAG_FILTER_SUPPORT
+
+#ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
+
+datapacket_t* ioport::read(void){
+	datapacket_t* pkt;
+	datapacketx86* pack;
+	cpc_ipv4_hdr_t* ipv4;
+
+READ_NEXT:
+	pkt = read__();
+	if(!pkt)
+		return NULL;
+	pack = (datapacketx86*)pkt->platform_state;
+	ipv4 = (cpc_ipv4_hdr_t*)get_ipv4_hdr(&pack->clas_state, 0);
+
+	//Check if it is a fragment
+	if(ipv4 && unlikely(ipv4_is_fragment(ipv4))){
+		assert(of_port_state->attached_sw->platform_state != NULL);
+		pkt = gnu_linux_reas_ipv4_pkt(of_port_state->attached_sw, &pkt, ipv4);
+		if(pkt)
+			//Packet successfully reassembled
+			return pkt;
+		else
+			//Fragment stored (or reassembly failed)
+			goto READ_NEXT;
+	}
+
+	return pkt;
+}
+
+#endif //COMPILE_IPV4_REAS_FILTER_SUPPORT

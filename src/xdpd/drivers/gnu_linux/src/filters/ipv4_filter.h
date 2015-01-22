@@ -61,7 +61,7 @@ bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid);
 *
 * The implementation is optimized for *ordered* reassemblies.
 */
-datapacket_t* gnu_linux_reas_ipv4_pkt(datapacket_t** pkt);
+datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_ipv4_hdr_t* ipv4);
 
 //mgmt routines
 hal_result_t gnu_linux_enable_ipv4_reas_filter(const uint64_t dpid);

@@ -41,9 +41,7 @@ public:
 	*/
 	virtual void set_connected_port(ioport_vlink* connected_port);
 
-
-	//Non-blocking read and write
-	virtual datapacket_t* read(void);
+	//Write up to num_of_buckets in the iface
 	virtual unsigned int write(unsigned int q_id, unsigned int num_of_buckets);
 
 	//Get read&write fds. Return -1 if do not exist
@@ -81,6 +79,9 @@ protected:
 	static const unsigned int MIN_PKT_LEN=14;
 
 	void empty_pipe(int* pipe, int* deferred_drain);
+
+	//Non-blocking read and enqueue
+	virtual datapacket_t* read__(void);
 	virtual void enqueue_packet__(datapacket_t* pkt, unsigned int q_id);
 };
 

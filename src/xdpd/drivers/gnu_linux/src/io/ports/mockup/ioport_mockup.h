@@ -28,8 +28,7 @@ public:
 	ioport_mockup(switch_port_t* of_ps, unsigned int num_queues=MMAP_DEFAULT_NUM_OF_QUEUES);
 	virtual ~ioport_mockup();
 
-	//Non-blocking read and write
-	virtual datapacket_t* read(void);
+	//Write num_of_buckets in the iface
 	virtual unsigned int write(unsigned int q_id, unsigned int num_of_buckets);
 
 	//Get read&write fds. Return -1 if do not exist
@@ -60,6 +59,9 @@ protected:
 	//Pipe extremes
 	static const unsigned int READ=0;
 	static const unsigned int WRITE=1;
+
+	//Non-blocking read
+	virtual datapacket_t* read__(void);
 
 	//Enque packet for transmission (blocking)
 	virtual void enqueue_packet__(datapacket_t* pkt, unsigned int q_id);

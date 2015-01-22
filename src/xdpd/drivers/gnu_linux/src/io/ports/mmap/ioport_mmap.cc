@@ -174,7 +174,7 @@ inline void ioport_mmap::fill_vlan_pkt(struct tpacket2_hdr *hdr, datapacketx86 *
 }
 
 // handle read
-datapacket_t* ioport_mmap::read(){
+datapacket_t* ioport_mmap::read__(){
 
 	struct tpacket2_hdr *hdr;
 	struct sockaddr_ll *sll;

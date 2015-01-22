@@ -126,7 +126,7 @@ inline void ioport_vlink::empty_pipe(int* pipe, int* deferred_drain){
 	}
 }
 
-datapacket_t* ioport_vlink::read(){
+datapacket_t* ioport_vlink::read__(){
 
 	datapacket_t* pkt = input_queue->non_blocking_read();
 	datapacketx86* pkt_x86;

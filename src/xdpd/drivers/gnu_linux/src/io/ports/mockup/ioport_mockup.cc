@@ -57,7 +57,7 @@ void ioport_mockup::enqueue_packet__(datapacket_t* pkt, unsigned int q_id){
 
 }
 
-datapacket_t* ioport_mockup::read(){
+datapacket_t* ioport_mockup::read__(){
 
 	datapacket_t* pkt;
 	datapacketx86* pkt_x86;

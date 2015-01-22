@@ -75,7 +75,14 @@ public:
 	*
 	* This method must be NON-BLOCKING
 	*/
-	virtual datapacket_t* read(void)=0;
+#ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
+	datapacket_t* read(void);
+#else
+	inline datapacket_t* read(void){
+		return read__();
+	}
+#endif
+
 
 	/**
 	* Enque packet for transmission(this must be a non blocking call).
@@ -233,6 +240,15 @@ protected:
 	* checks before attempting to enqueue the packet.
 	*/
 	virtual void enqueue_packet__(datapacket_t* pkt, unsigned int q_id)=0;
+
+	/**
+	* Read(RX) one (1) packet if available, return NULL if no packet
+	* can be read immediately. The packet MUST be already classified.
+	*
+	* This method must be NON-BLOCKING
+	*/
+	virtual datapacket_t* read__(void)=0;
+
 };
 
 }// namespace xdpd::gnu_linux

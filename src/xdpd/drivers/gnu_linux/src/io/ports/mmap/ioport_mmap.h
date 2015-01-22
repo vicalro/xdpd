@@ -58,10 +58,7 @@ public:
 	virtual
 	~ioport_mmap();
 
-
-	//Non-blocking read and write
-	virtual datapacket_t* read(void);
-
+	//Trigger writes
 	virtual unsigned int write(unsigned int q_id, unsigned int num_of_buckets);
 
 	// Get read fds. Return -1 if do not exist
@@ -97,6 +94,9 @@ public:
 	virtual rofl_result_t down(void);
 
 protected:
+	//Non-blocking read and write
+	virtual datapacket_t* read__(void);
+
 	//Enque packet for transmission(blocking)
 	virtual void enqueue_packet__(datapacket_t* pkt, unsigned int q_id);
 
