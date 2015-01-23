@@ -363,6 +363,7 @@ hal_result_t gnu_linux_disable_ipv4_reas_filter(const uint64_t dpid){
 	}
 
 	ls_int->ipv4_reas_filter_status = false;
+	__sync_synchronize();
 	gnu_linux_destroy_ipv4_reas(ls_int->reas_state);
 	ls_int->reas_state = NULL;
 

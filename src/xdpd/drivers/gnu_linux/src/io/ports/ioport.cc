@@ -166,8 +166,14 @@ READ_NEXT:
 	pack = (datapacketx86*)pkt->platform_state;
 	ipv4 = (cpc_ipv4_hdr_t*)get_ipv4_hdr(&pack->clas_state, 0);
 
+	//Cache it locally
+	switch_platform_state_t* sw_state = (switch_platform_state_t*)(of_port_state->attached_sw->platform_state);
+	if(unlikely(sw_ipv4_reas_filter_status != sw_state->ipv4_reas_filter_status))
+		sw_ipv4_reas_filter_status = sw_state->ipv4_reas_filter_status;
+
+
 	//Check if it is a fragment
-	if(ipv4 && unlikely(ipv4_is_fragment(ipv4))){
+	if(ipv4 && unlikely(ipv4_is_fragment(ipv4)) && sw_ipv4_reas_filter_status){
 		assert(of_port_state->attached_sw->platform_state != NULL);
 		pkt = gnu_linux_reas_ipv4_pkt(of_port_state->attached_sw, &pkt, ipv4);
 		if(pkt)

@@ -42,6 +42,7 @@ hal_result_t gnu_linux_disable_ipv4_frag_filter(const uint64_t dpid){
 
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
 	ls_int->ipv4_frag_filter_status = false;
+	__sync_synchronize();
 
 	ROFL_INFO(DRIVER_NAME" IPv4 fragmentation filter DISABLED.\n");
 
