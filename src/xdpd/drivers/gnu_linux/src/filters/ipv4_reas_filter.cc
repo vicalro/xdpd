@@ -1,6 +1,13 @@
 #include <rofl.h>
 #include <sys/queue.h>
 #include <pthread.h>
+
+//Make sure pipeline-imp are BEFORE _pp.h
+//so that functions can be inlined
+#include "../pipeline-imp/atomic_operations.h"
+#include "../pipeline-imp/pthread_lock.h"
+#include "../pipeline-imp/packet.h"
+
 #include "../config.h"
 #include "../io/bufferpool.h"
 #include "../io/datapacketx86.h"
@@ -9,13 +16,9 @@
 #include "ipv4_filter.h"
 #include "../util/khash.h"
 
-//Make sure pipeline-imp are BEFORE _pp.h
-//so that functions can be inlined
-#include "../pipeline-imp/atomic_operations.h"
-#include "../pipeline-imp/pthread_lock.h"
-
 #include <rofl/datapath/pipeline/openflow/openflow1x/pipeline/of1x_pipeline_pp.h>
 #include <rofl/datapath/pipeline/openflow/of_switch_pp.h>
+
 
 using namespace xdpd::gnu_linux;
 
@@ -232,11 +235,11 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 	uint16_t ht_index;
 	ipv4_reas_ht_entry_t* entry;
 	ipv4_reas_set_t *set;
-
+	uint64_t *tmp, *key_tmp;
 	//Compose key
 	key.ip_dst = *get_ipv4_dst(ipv4);
 	key.id = *get_ipv4_ident(ipv4);
-
+	key_tmp = (uint64_t*)&key; //Avoid annoying aliasing warnings
 	//Hash it
 	ht_index = frag_hash((const char*)&key);
 
@@ -246,7 +249,8 @@ static ipv4_reas_set_t* get_or_init_frag_set(ipv4_reas_state_t* state, cpc_ipv4_
 	pthread_rwlock_rdlock(&entry->rwlock);
 	//Look for the right bucket
 	TAILQ_FOREACH(set, &entry->buckets, __bucket_ll) {
-		if( (*(uint64_t*)&set->key) == (*((uint64_t*)&key))){
+		tmp = (uint64_t*)&set->key; //Avoid annoying aliasing warnings
+		if(*tmp == *key_tmp){
 			pthread_mutex_lock(&set->mutex);
 			break;
 		}
@@ -527,6 +531,7 @@ datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_i
 	if(!set->num_of_holes){
 		//Set the reas_pkt
 		reas_pkt = set->pkt;
+		pack_reas = (datapacketx86*)reas_pkt->platform_state;
 
 		//Return set
 		release_frag_set(ls_int->reas_state, set);

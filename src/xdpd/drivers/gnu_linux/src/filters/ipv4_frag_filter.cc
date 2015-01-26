@@ -3,13 +3,13 @@
 #include "../io/datapacketx86.h"
 #include "../io/packet_classifiers/pktclassifier.h"
 
-#include "ipv4_filter.h"
-
 //Make sure pipeline-imp are BEFORE _pp.h
 //so that functions can be inlined
 #include "../pipeline-imp/atomic_operations.h"
 #include "../pipeline-imp/pthread_lock.h"
-#include "../pipeline-imp/packet_inline.h"
+#include "../pipeline-imp/packet.h"
+
+#include "ipv4_filter.h"
 
 #include <rofl/datapath/pipeline/openflow/openflow1x/pipeline/of1x_pipeline_pp.h>
 #include <rofl/datapath/pipeline/openflow/of_switch_pp.h>

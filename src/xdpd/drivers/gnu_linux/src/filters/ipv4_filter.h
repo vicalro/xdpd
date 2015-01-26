@@ -23,11 +23,13 @@
 ROFL_BEGIN_DECLS
 
 static inline void gnu_linux_ipv4_set_offset(cpc_ipv4_hdr_t* ipv4, uint16_t val){
-	*((uint16_t*)ipv4->offset_flags) |= HTONB16(val&0x1FFF);
+	uint16_t* tmp = (uint16_t*)ipv4->offset_flags; //Avoid annoying aliasing warnings
+	*tmp |= HTONB16(val&0x1FFF);
 }
 
 static inline uint16_t gnu_linux_ipv4_get_offset(cpc_ipv4_hdr_t* ipv4){
-	return NTOHB16((*(uint16_t*)ipv4->offset_flags))&0x1FFF;
+	uint16_t* tmp = (uint16_t*)ipv4->offset_flags; //Avoid annoying aliasing warnings
+	return NTOHB16(*tmp)&0x1FFF;
 }
 
 
