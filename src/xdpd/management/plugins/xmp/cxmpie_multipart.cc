@@ -36,10 +36,10 @@ cxmpie_multipart::cxmpie_multipart(cxmpie_multipart const &elem) :
 cxmpie_multipart::cxmpie_multipart(cxmpie const& elem) :
 		cxmpie(elem)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 	if (XMPIET_MULTIPART != elem.get_type()) throw eXmpIeInval();
 
-	rofl::logging::debug << __PRETTY_FUNCTION__ << ": elem.length()=" << elem.length() << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << ": elem.length()=" << elem.length() << std::endl;
 
 	unpack(elem.somem(), elem.length());
 	xmpie_generic = somem();
@@ -101,7 +101,7 @@ cxmpie_multipart::unpack(uint8_t* buf, size_t buflen)
 {
 	clear();
 
-	rofl::logging::debug << __PRETTY_FUNCTION__ << ": buf=" << buf << " buflen=" << buflen << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << ": buf=" << buf << " buflen=" << buflen << std::endl;
 
 //	cxmpie::unpack(buf, sizeof(struct xmp_ie_header_t));
 //	xmpie_generic = somem();
@@ -113,7 +113,7 @@ cxmpie_multipart::unpack(uint8_t* buf, size_t buflen)
 		struct xmp_ie_header_t *hdr = (struct xmp_ie_header_t*) buf;
 		if ((be16toh(hdr->len) > buflen)
 				|| (be16toh(hdr->len) < sizeof(struct xmp_ie_header_t))) {
-			rofl::logging::error
+			LOGGING_ERROR
 					<< "[xdpd][xmp] unpacking IE list, invalid length field in IE"
 					<< std::endl;
 			return;
@@ -145,7 +145,7 @@ cxmpie_multipart::copy_ies(std::deque<cxmpie*> const &rhs)
 cxmpie*
 cxmpie_multipart::bakery(cxmpie *ref)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << ": type=" << ref->get_type() << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << ": type=" << ref->get_type() << std::endl;
 	switch (ref->get_type()) {
 
 	case XMPIET_NONE:

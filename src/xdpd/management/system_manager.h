@@ -98,7 +98,7 @@ public:
 	* The call to set_logging_debug_level() will throw eSystemLogLevelSetviaCLI exception
 	* since CLI options have always preference over runtime API.
 	*
-	* Use logging::EMERG, logging::ALERT ... defined in rofl/common/logging.h
+	* Use LOGGING_EMERG, LOGGING_ALERT ... defined in rofl/common/logging.h
 	*/
 	static void set_logging_debug_level(const unsigned int level);	
 

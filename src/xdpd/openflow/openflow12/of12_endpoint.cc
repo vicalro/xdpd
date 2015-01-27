@@ -548,7 +548,7 @@ of12_endpoint::handle_group_stats_request(
 	
 	if(g_msg_all==NULL){
 		//TODO handle error
-		logging::error << "[xdpd][of12][group-stats] unable to retrieve group statistics from pipeline" << std::endl;
+		LOGGING_ERROR << "[xdpd][of12][group-stats] unable to retrieve group statistics from pipeline" << std::endl;
 	}
 	
 	rofl::openflow::cofgroupstatsarray groups(ctl.get_version_negotiated());
@@ -714,12 +714,12 @@ of12_endpoint::process_packet_in(
 
 #if 0
 		if (buffer_id == OF1XP_NO_BUFFER) {
-			rofl::logging::error << "[xdpd][of12][packet-in] unable to send Packet-In message" << std::endl;
+			LOGGING_ERROR << "[xdpd][of12][packet-in] unable to send Packet-In message" << std::endl;
 
 			return ROFL_FAILURE;
 		}
 
-		rofl::logging::error << "[xdpd][of12][packet-in] unable to send Packet-In message, dropping packet from occupied pkt slot" << std::endl;
+		LOGGING_ERROR << "[xdpd][of12][packet-in] unable to send Packet-In message, dropping packet from occupied pkt slot" << std::endl;
 
 		of1x_action_group_t* action_group = of1x_init_action_group(NULL);
 
@@ -742,7 +742,7 @@ of12_endpoint::process_packet_in(
 								action_group,
 								NULL, 0)){
 			// log error
-			rofl::logging::crit << "[xdpd][of12][packet-in] unable drop stored packet: this may lead to a deadlock situation!" << std::endl;
+			LOGGING_CRIT << "[xdpd][of12][packet-in] unable drop stored packet: this may lead to a deadlock situation!" << std::endl;
 		}
 
 		of1x_destroy_action_group(action_group);
@@ -929,7 +929,7 @@ of12_endpoint::flow_mod_add(
 
 	// sanity check: table for table-id must exist
 	if ( (table_id > sw->num_of_tables) && (table_id != openflow12::OFPTT_ALL) ){
-		rofl::logging::error << "[xdpd][of12][flow-mod-add] unable to add flow-mod due to " <<
+		LOGGING_ERROR << "[xdpd][of12][flow-mod-add] unable to add flow-mod due to " <<
 				"invalid table-id:" << msg.get_flowmod().get_table_id() << " on dpt:" << sw->dpname << std::endl;
 		throw rofl::eFlowModBadTableId();
 	}
@@ -937,7 +937,7 @@ of12_endpoint::flow_mod_add(
 	try{
 		entry = of12_translation_utils::of12_map_flow_entry(&ctl, &msg, sw);
 	}catch(...){
-		rofl::logging::error << "[xdpd][of12][flow-mod-add] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
+		LOGGING_ERROR << "[xdpd][of12][flow-mod-add] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
 		throw rofl::eFlowModUnknown();
 	}
 
@@ -953,10 +953,10 @@ of12_endpoint::flow_mod_add(
 								msg.get_flowmod().get_flags() & openflow12::OFPFF_RESET_COUNTS))){
 		// log error
 		if(entry){
-			rofl::logging::error << "[xdpd][of12][flow-mod-add] error inserting flow-mod on dpt:" << sw->dpname << std::endl;
+			LOGGING_ERROR << "[xdpd][of12][flow-mod-add] error inserting flow-mod on dpt:" << sw->dpname << std::endl;
 			of1x_destroy_flow_entry(entry);
 		}else{
-			rofl::logging::error << "[xdpd][of12][flow-mod-add] Bufferid: "<<msg.get_flowmod().get_buffer_id()<<" could not be processed for dpt:" << sw->dpname <<". Buffer ID expired or invalid" << std::endl;
+			LOGGING_ERROR << "[xdpd][of12][flow-mod-add] Bufferid: "<<msg.get_flowmod().get_buffer_id()<<" could not be processed for dpt:" << sw->dpname <<". Buffer ID expired or invalid" << std::endl;
 		}
 
 		if(res == HAL_FM_OVERLAP_FAILURE){
@@ -980,7 +980,7 @@ of12_endpoint::flow_mod_modify(
 	// sanity check: table for table-id must exist
 	if (pack.get_flowmod().get_table_id() > sw->num_of_tables)
 	{
-		rofl::logging::error << "[xdpd][of12][flow-mod-modify] unable to modify flow-mod due to " <<
+		LOGGING_ERROR << "[xdpd][of12][flow-mod-modify] unable to modify flow-mod due to " <<
 				"invalid table-id:" << pack.get_flowmod().get_table_id() << " on dpt:" << sw->dpname << std::endl;
 		throw rofl::eFlowModBadTableId();
 	}
@@ -988,7 +988,7 @@ of12_endpoint::flow_mod_modify(
 	try{
 		entry = of12_translation_utils::of12_map_flow_entry(&ctl, &pack, sw);
 	}catch(...){
-		rofl::logging::error << "[xdpd][of12][flow-mod-modify] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
+		LOGGING_ERROR << "[xdpd][of12][flow-mod-modify] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
 		throw rofl::eFlowModUnknown();
 	}
 
@@ -1007,10 +1007,10 @@ of12_endpoint::flow_mod_modify(
 								strictness,
 								pack.get_flowmod().get_flags() & openflow12::OFPFF_RESET_COUNTS)){
 		if(entry){
-			rofl::logging::error << "[xdpd][of12][flow-mod-modify] error modifying flow-mod on dpt:" << sw->dpname << std::endl;
+			LOGGING_ERROR << "[xdpd][of12][flow-mod-modify] error modifying flow-mod on dpt:" << sw->dpname << std::endl;
 			of1x_destroy_flow_entry(entry);
 		}else{
-			rofl::logging::error << "[xdpd][of12][flow-mod-modify] Bufferid: "<<pack.get_flowmod().get_buffer_id()<<" could not be processed for dpt:" << sw->dpname <<". Buffer ID expired or invalid" << std::endl;
+			LOGGING_ERROR << "[xdpd][of12][flow-mod-modify] Bufferid: "<<pack.get_flowmod().get_buffer_id()<<" could not be processed for dpt:" << sw->dpname <<". Buffer ID expired or invalid" << std::endl;
 		}
 		throw rofl::eFlowModBase();
 	} 
@@ -1030,7 +1030,7 @@ of12_endpoint::flow_mod_delete(
 	try{
 		entry = of12_translation_utils::of12_map_flow_entry(&ctl, &pack, sw);
 	}catch(...){
-		rofl::logging::error << "[xdpd][of12][flow-mod-delete] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
+		LOGGING_ERROR << "[xdpd][of12][flow-mod-delete] unable to map flow-mod entry to internal representation on dpt:" << sw->dpname << std::endl;
 		throw rofl::eFlowModUnknown();
 	}
 
@@ -1046,7 +1046,7 @@ of12_endpoint::flow_mod_delete(
 								pack.get_flowmod().get_out_port(),
 								pack.get_flowmod().get_out_group(),
 								strictness)) {
-		rofl::logging::error << "[xdpd][of12][flow-mod-delete] error deleting flow-mod on dpt:" << sw->dpname << std::endl;
+		LOGGING_ERROR << "[xdpd][of12][flow-mod-delete] error deleting flow-mod on dpt:" << sw->dpname << std::endl;
 		of1x_destroy_flow_entry(entry);
 		throw rofl::eFlowModBase();
 	} 

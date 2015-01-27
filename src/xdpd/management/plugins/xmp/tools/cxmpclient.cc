@@ -44,7 +44,7 @@ cxmpclient::~cxmpclient()
 void
 cxmpclient::handle_connected(rofl::csocket& socket)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 	assert(this->socket == &socket);
 
 	if (mem) {
@@ -59,21 +59,21 @@ cxmpclient::handle_connected(rofl::csocket& socket)
 void
 cxmpclient::handle_connect_refused(rofl::csocket& socket)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 	exit(-1);
 }
 
 void
 cxmpclient::handle_connect_failed(rofl::csocket& socket)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 	exit(-1);
 }
 
 void
 cxmpclient::handle_read(rofl::csocket& socket)
 {
-	rofl::logging::info << "[xmpclient]" << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_INFO << "[xmpclient]" << __PRETTY_FUNCTION__ << std::endl;
 
 	try {
 
@@ -95,7 +95,7 @@ cxmpclient::handle_read(rofl::csocket& socket)
 
 			// sanity check: 8 <= msg_len <= 2^16
 			if (msg_len < sizeof(struct xmp_header_t)) {
-				rofl::logging::warn << "[xmpclient] received message with invalid length field, closing socket." << std::endl;
+				LOGGING_WARN << "[xmpclient] received message with invalid length field, closing socket." << std::endl;
 				socket.close();
 				return;
 			}
@@ -137,7 +137,7 @@ cxmpclient::handle_read(rofl::csocket& socket)
 					case XMPT_REQUEST:
 					default:
 					{
-						rofl::logging::error
+						LOGGING_ERROR
 								<< "[xmpclient] unexpected message rcvd"
 								<< std::endl;
 					}
@@ -153,11 +153,11 @@ cxmpclient::handle_read(rofl::csocket& socket)
 	} catch (rofl::eSocketRxAgain& e) {
 
 		// more bytes are needed, keep pointer to msg in "fragment"
-		rofl::logging::debug << "[xmpclient] read again" << std::endl;
+		LOGGING_DEBUG << "[xmpclient] read again" << std::endl;
 
 	} catch (rofl::eSysCall& e) {
 
-		rofl::logging::warn << "[xmpclient] closing socket: " << e << std::endl;
+		LOGGING_WARN << "[xmpclient] closing socket: " << e << std::endl;
 
 		if (fragment) {
 			delete fragment; fragment = (rofl::cmemory*)0;
@@ -168,7 +168,7 @@ cxmpclient::handle_read(rofl::csocket& socket)
 
 	} catch (rofl::RoflException& e) {
 
-		rofl::logging::warn << "[xmpclient] dropping invalid message: " << e << std::endl;
+		LOGGING_WARN << "[xmpclient] dropping invalid message: " << e << std::endl;
 
 		if (fragment) {
 			delete fragment; fragment = (rofl::cmemory*)0;
@@ -182,13 +182,13 @@ cxmpclient::handle_read(rofl::csocket& socket)
 void
 cxmpclient::handle_write(rofl::csocket& socket)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void
 cxmpclient::handle_closed(rofl::csocket& socket)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void
@@ -210,7 +210,7 @@ void
 cxmpclient::handle_timeout(
 		int opaque, void *data)
 {
-	rofl::logging::debug << __PRETTY_FUNCTION__ << std::endl;
+	LOGGING_DEBUG << __PRETTY_FUNCTION__ << std::endl;
 
 	switch (opaque) {
 	case TIMER_XMPCLNT_EXIT: {
@@ -249,10 +249,10 @@ cxmpclient::send_message(cxmpmsg &msg)
 void
 cxmpclient::handle_reply(cxmpmsg& msg)
 {
-	rofl::logging::info << "[xdpd][plugin][xmp] rcvd message:" << std::endl << msg;
+	LOGGING_INFO << "[xdpd][plugin][xmp] rcvd message:" << std::endl << msg;
 
 	if (NULL != observer) {
-		rofl::logging::info << "[xdpd][plugin][xmp] call observer:" << std::endl;
+		LOGGING_INFO << "[xdpd][plugin][xmp] call observer:" << std::endl;
 		observer->notify(msg);
 	}
 }
@@ -260,10 +260,10 @@ cxmpclient::handle_reply(cxmpmsg& msg)
 void
 cxmpclient::handle_error(cxmpmsg& msg)
 {
-	rofl::logging::error << "[xdpd][plugin][xmp] rcvd error message:" << std::endl << msg;
+	LOGGING_ERROR << "[xdpd][plugin][xmp] rcvd error message:" << std::endl << msg;
 
 	if (NULL != observer) {
-		rofl::logging::info << "[xdpd][plugin][xmp] call observer:" << std::endl;
+		LOGGING_INFO << "[xdpd][plugin][xmp] call observer:" << std::endl;
 		observer->notify(msg);
 	}
 }
@@ -271,7 +271,7 @@ cxmpclient::handle_error(cxmpmsg& msg)
 void
 cxmpclient::register_observer(cxmpobserver *observer)
 {
-	rofl::logging::info << "[xdpd][plugin][xmp] register observer:" << observer << std::endl;
+	LOGGING_INFO << "[xdpd][plugin][xmp] register observer:" << observer << std::endl;
 	assert(observer);
 	this->observer = observer;
 }
@@ -290,7 +290,7 @@ cxmpclient::port_list()
 	cxmpmsg msg(XMP_VERSION, XMPT_REQUEST);
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_PORT_LIST);
 
-	rofl::logging::debug << "[xmpclient] sending Port-List request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-List request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -301,7 +301,7 @@ cxmpclient::port_list(uint64_t dpid)
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_PORT_LIST);
 	msg.get_xmpies().add_ie_dpid().set_dpid(dpid);
 
-	rofl::logging::debug << "[xmpclient] sending Port-List request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-List request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -311,7 +311,7 @@ cxmpclient::port_info()
 	cxmpmsg msg(XMP_VERSION, XMPT_REQUEST);
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_PORT_INFO);
 
-	rofl::logging::debug << "[xmpclient] sending Port-Info request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-Info request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -324,7 +324,7 @@ cxmpclient::port_attach(uint64_t dpid, std::string const& portname)
 	msg.get_xmpies().add_ie_portname().set_name(portname);
 	msg.get_xmpies().add_ie_dpid().set_dpid(dpid);
 
-	rofl::logging::debug << "[xmpclient] sending Port-Attach request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-Attach request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -337,7 +337,7 @@ cxmpclient::port_detach(uint64_t dpid, std::string const& portname)
 	msg.get_xmpies().add_ie_portname().set_name(portname);
 	msg.get_xmpies().add_ie_dpid().set_dpid(dpid);
 
-	rofl::logging::debug << "[xmpclient] sending Port-Detach request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-Detach request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -349,7 +349,7 @@ cxmpclient::port_enable(std::string const& portname)
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_PORT_ENABLE);
 	msg.get_xmpies().add_ie_portname().set_name(portname);
 
-	rofl::logging::debug << "[xmpclient] sending Port-Enable request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-Enable request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -361,7 +361,7 @@ cxmpclient::port_disable(std::string const& portname)
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_PORT_DISABLE);
 	msg.get_xmpies().add_ie_portname().set_name(portname);
 
-	rofl::logging::debug << "[xmpclient] sending Port-Disable request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Port-Disable request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -371,7 +371,7 @@ cxmpclient::lsi_list()
 	cxmpmsg msg(XMP_VERSION, XMPT_REQUEST);
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_LSI_LIST);
 
-	rofl::logging::debug << "[xmpclient] sending Lsi-List request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Lsi-List request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -381,7 +381,7 @@ cxmpclient::lsi_info()
 	cxmpmsg msg(XMP_VERSION, XMPT_REQUEST);
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_LSI_INFO);
 
-	rofl::logging::debug << "[xmpclient] sending Lsi-Info request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Lsi-Info request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -399,7 +399,7 @@ cxmpclient::lsi_create(uint64_t dpid, std::string const& lsi_name, const std::li
 		msg.get_xmpies().set_ie_multipart().push_back(new cxmpie_controller(*iter));
 	}
 
-	rofl::logging::debug << "[xmpclient] sending Lsi-Create request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Lsi-Create request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -410,7 +410,7 @@ cxmpclient::lsi_destroy(const uint64_t dpid)
 	msg.get_xmpies().add_ie_command().set_command(XMPIEMCT_LSI_DESTROY);
 	msg.get_xmpies().add_ie_dpid().set_dpid(dpid);
 
-	rofl::logging::debug << "[xmpclient] sending Lsi-Destroy request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Lsi-Destroy request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -427,7 +427,7 @@ cxmpclient::lsi_connect_to_controller(uint64_t dpid, const std::list<class xdpd:
 		msg.get_xmpies().set_ie_multipart().push_back(new cxmpie_controller(*iter));
 	}
 
-	rofl::logging::debug << "[xmpclient] sending Lsi-Connect-To-Controller request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Lsi-Connect-To-Controller request:" << std::endl << msg;
 	send_message(msg);
 }
 
@@ -441,6 +441,6 @@ cxmpclient::lsi_cross_connect(const uint64_t dpid1, const uint64_t port_no1, con
 	msg.get_xmpies().set_ie_lsixlsi().set_dpid2(dpid2);
 	msg.get_xmpies().set_ie_lsixlsi().set_portno2(port_no2);
 
-	rofl::logging::debug << "[xmpclient] sending Lsi-Cross-Connect request:" << std::endl << msg;
+	LOGGING_DEBUG << "[xmpclient] sending Lsi-Cross-Connect request:" << std::endl << msg;
 	send_message(msg);
 }

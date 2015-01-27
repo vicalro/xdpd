@@ -8,8 +8,8 @@ int
 main(int argc, char** argv)
 {
 #ifdef DEBUG
-	rofl::logging::init();
-	rofl::logging::set_debug_level(rofl::logging::DBG);
+	LOGGING_INIT();
+	LOGGING_SET_DEBUG_LEVEL(LOGGING_DBG);
 #endif
 
 	xdpd::mgmt::protocol::cxmpclient xmpclient;
@@ -69,7 +69,7 @@ main(int argc, char** argv)
 	rofl::cioloop::get_loop().run();
 
 	//Logging
-	rofl::logging::close();
+	LOGGING_CLOSE();
 
 	//Release ciosrv loop resources
 	rofl::cioloop::get_loop().shutdown();

@@ -185,7 +185,7 @@ void system_manager::init(int argc, char** argv){
 	//Daemonize
 	if(env_parser->is_arg_set("daemonize")) {
 		rofl::cdaemon::daemonize(XDPD_PID_FILE, XDPD_LOG_FILE);
-		rofl::logging::notice << "[xdpd][system_manager] daemonizing successful" << std::endl;
+		LOGGING_NOTICE << "[xdpd][system_manager] daemonizing successful" << std::endl;
 	}else{
 		//If not daemonized and logfile is set: redirects the output to logfile. TODO: maybe logfile shouldn't depend on daemonize.
 		if(env_parser->is_arg_set("logfile")){
@@ -223,7 +223,7 @@ void system_manager::init(int argc, char** argv){
 	signal(SIGINT, interrupt_handler);
 		
 	if(is_test_run())
-		rofl::logging::notice << "[xdpd][system_manager] Launched with -t "<< XDPD_TEST_RUN_OPT_FULL_NAME <<". Doing a test-run execution" << std::endl;
+		LOGGING_NOTICE << "[xdpd][system_manager] Launched with -t "<< XDPD_TEST_RUN_OPT_FULL_NAME <<". Doing a test-run execution" << std::endl;
 
 	//Driver initialization
 	if(hal_driver_init(&hal_extension_ops, __get_driver_extra_params().c_str()) != HAL_SUCCESS){
