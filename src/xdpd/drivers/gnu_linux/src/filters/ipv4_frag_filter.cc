@@ -14,6 +14,15 @@
 #include <rofl/datapath/pipeline/openflow/openflow1x/pipeline/of1x_pipeline_pp.h>
 #include <rofl/datapath/pipeline/openflow/of_switch_pp.h>
 
+//Extern C
+ROFL_BEGIN_DECLS
+
+//Checksums calculator
+extern void calculate_checksums_in_software(datapacket_t* pkt);
+
+//Extern C
+ROFL_END_DECLS
+
 using namespace xdpd::gnu_linux;
 
 #ifdef COMPILE_IPV4_FRAG_FILTER_SUPPORT
