@@ -21,7 +21,10 @@
 #include <rofl/datapath/pipeline/physical_switch.h>
 #include <rofl/datapath/hal/driver.h>
 #include <rofl/datapath/hal/cmm.h>
+
+#include "config.h"
 #include "processing/ls_internal_state.h"
+#include "filters/ipv4_filter.h"
 #include "io/bufferpool.h"
 #include "io/datapacket_storage.h"
 #include "io/pktin_dispatcher.h"
@@ -37,10 +40,10 @@ static bool bg_continue_execution = true;
 
 /**
  * This piece of code is meant to manage a thread that does:
- * 
+ *
  * - the expiration of the flow entries.
  * - the update the status of the ports
- * - purge old buffers in the buffer storage of a logical switch(pkt-in) 
+ * - purge old buffers in the buffer storage of a logical switch(pkt-in)
  * - more?
  */
 
@@ -114,40 +117,40 @@ static int read_netlink_socket(int fd, char *buf, int seq_num, int pid){
 		    break;
 		}
 	} while ((nlh->nlmsg_seq != (unsigned int)seq_num) || (nlh->nlmsg_pid != (unsigned int)pid));
-	
+
 	return msg_len;
 }
 
 /**
  * @name read_netlink_message
- * @brief once we have received a NL message, this function reads the content and 
+ * @brief once we have received a NL message, this function reads the content and
  * calls a function to update the port structure
  * @param fd file descriptor where the message has been received
  */
 static rofl_result_t read_netlink_message(int fd){
-	
+
 	int len;
 	struct nlmsghdr *nlh;
 	char recv_buffer[MAX_NL_MESSAGE_HEADER];
 	nlh = (struct nlmsghdr *)recv_buffer;
-	
+
 	struct ifinfomsg *ifi;
 	char name[IFNAMSIZ];
 
 	len = read_netlink_socket(fd,(char*)nlh, 0, getpid());
 	if(len <= 0)
-		return ROFL_FAILURE; 
+		return ROFL_FAILURE;
 
 	for (; NLMSG_OK(nlh, (unsigned int)len); nlh = NLMSG_NEXT(nlh, len)) {
 
 	    if (nlh->nlmsg_type == RTM_NEWLINK){
 				ifi = (struct ifinfomsg *) NLMSG_DATA(nlh);
-				
+
 				if(!if_indextoname(ifi->ifi_index, name))
 					continue; //Unable to map interface
-				
+
 				ROFL_DEBUG_VERBOSE(DRIVER_NAME" [bg] Interface changed status %s (%u) flags=0x%x change=0x%x\n",name, ifi->ifi_index, ifi->ifi_flags, ifi->ifi_change);
-				
+
 				if (ifi->ifi_change & IFF_UP) {
 					// HERE change the status to the port structure
 					if(update_port_status(name)!=ROFL_SUCCESS)
@@ -158,7 +161,7 @@ static rofl_result_t read_netlink_message(int fd){
 		return update_physical_ports();
 	    }
 	}
-	
+
 	return ROFL_SUCCESS;
 }
 
@@ -173,49 +176,34 @@ int process_timeouts()
 	unsigned int i, max_switches;
 	struct timeval now;
 	of_switch_t** logical_switches;
-	static struct timeval last_time_entries_checked={0,0}, last_time_pool_checked={0,0};
+	static struct timeval last_time_entries_checked={0,0}, last_time_pool_checked={0,0}, last_time_ipv4_reas_checked={0,0};
 	gettimeofday(&now,NULL);
 
 	//Retrieve the logical switches list
 	logical_switches = physical_switch_get_logical_switches(&max_switches);
-	
-	if(get_time_difference_ms(&now, &last_time_entries_checked)>=LSW_TIMER_SLOT_MS)
-	{
-#ifdef DEBUG
-		static int dummy = 0;
-#endif
 
-		//TIMERS FLOW ENTRIES
-		for(i=0; i<max_switches; i++)
-		{
+	for(i=0; i<max_switches; i++){
 
-			if(logical_switches[i] != NULL){
+		if(logical_switches[i] != NULL){
+			//Expire pipeline entries
+			if(get_time_difference_ms(&now, &last_time_entries_checked)>=LSW_TIMER_SLOT_MS){
 				of_process_pipeline_tables_timeout_expirations(logical_switches[i]);
-				
 #ifdef DEBUG
+				static int dummy = 0;
 				if(dummy%20 == 0)
 					of1x_full_dump_switch((of1x_switch_t*)logical_switches[i], false);
+				dummy++;
 #endif
+				last_time_entries_checked = now;
 			}
-		}
-			
-#ifdef DEBUG
-		dummy++;
-		//ROFL_DEBUG_VERBOSE(DRIVER_NAME" Checking flow entries expirations %lu:%lu\n",now.tv_sec,now.tv_usec);
-#endif
-		last_time_entries_checked = now;
-	}
-	
-	if(get_time_difference_ms(&now, &last_time_pool_checked)>=LSW_TIMER_BUFFER_POOL_MS){
-		uint32_t buffer_id;
-		datapacket_storage* dps=NULL;
-		
-		for(i=0; i<max_switches; i++){
 
-			if(logical_switches[i] != NULL){
+			//Expire LSI storage
+			if(get_time_difference_ms(&now, &last_time_pool_checked)>=LSW_TIMER_BUFFER_POOL_MS){
+				uint32_t buffer_id;
+				datapacket_storage* dps=NULL;
 
 				//Recover storage pointer
-				dps =( (switch_platform_state_t*) logical_switches[i]->platform_state)->storage;
+				dps = ( (switch_platform_state_t*) logical_switches[i]->platform_state)->storage;
 				//Loop until the oldest expired packet is taken out
 				while(dps->oldest_packet_needs_expiration(&buffer_id)){
 
@@ -229,15 +217,17 @@ int process_timeouts()
 						bufferpool::release_buffer(pkt);
 					}
 				}
+				last_time_pool_checked = now;
 			}
-		}
-		
-#ifdef DEBUG
-		//ROFL_ERR(DRIVER_NAME" Checking pool buffers expirations %lu:%lu\n",now.tv_sec,now.tv_usec);
+#ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
+			if(get_time_difference_ms(&now, &last_time_ipv4_reas_checked) >= (IPV4_REAS_FRAG_TIMEOUT_S*1000)){
+				gnu_linux_reas_ipv4_expire_frag_sets(logical_switches[i]);
+				last_time_ipv4_reas_checked = now;
+			}
 #endif
-		last_time_pool_checked = now;
+		}
 	}
-	
+
 	return ROFL_SUCCESS;
 }
 
@@ -251,15 +241,15 @@ void* x86_background_tasks_routine(void* param)
 	struct epoll_event event_list[MAX_EPOLL_EVENTS], epe_port;
 
 	// program an epoll that listents to the file descriptors of the ports with a
-	// timeout that makes us check 
-	
+	// timeout that makes us check
+
 	memset(event_list,0,sizeof(event_list));
 	memset(&epe_port,0,sizeof(epe_port));
-	
+
 	if((events_socket=prepare_event_socket())<0){
 		exit(ROFL_FAILURE);
 	}
-	
+
 	efd = epoll_create1(0);
 
 	if(efd == -1){
@@ -267,10 +257,10 @@ void* x86_background_tasks_routine(void* param)
 		return NULL;
 	}
 
-	//Add netlink	
+	//Add netlink
 	epe_port.data.fd = events_socket;
 	epe_port.events = EPOLLIN; //| EPOLLET;
-	
+
 	if(epoll_ctl(efd,EPOLL_CTL_ADD,events_socket,&epe_port)==-1){
 		ROFL_ERR(DRIVER_NAME" [bg] Error in epoll_ctl, errno(%d): %s\n", errno, strerror(errno));
 		return NULL;
@@ -281,14 +271,14 @@ void* x86_background_tasks_routine(void* param)
 
 	epe_port.data.fd = get_packet_in_read_fd();
 	epe_port.events = EPOLLIN; //| EPOLLET
-	
+
 	if(epoll_ctl(efd,EPOLL_CTL_ADD, epe_port.data.fd, &epe_port)==-1){
 		ROFL_ERR(DRIVER_NAME" [bg] Error in epoll_ctl, errno(%d): %s\n", errno, strerror(errno));
 		return NULL;
 	}
 
 	while(bg_continue_execution){
-		
+
 		//Throttle
 		nfds = epoll_wait(efd, event_list, MAX_EPOLL_EVENTS, LSW_TIMER_SLOT_MS/*timeout needs TBD somewhere else*/);
 
@@ -310,38 +300,38 @@ void* x86_background_tasks_routine(void* param)
 				//Is netlink or packet-in subsystem
 				if(get_packet_in_read_fd() == event_list[i].data.fd){
 					//PKT_IN
-					process_packet_ins();	
+					process_packet_ins();
 				}else{
 					//Netlink message
 					read_netlink_message(event_list[i].data.fd);
 				}
 			}
 		}
-	
-		//If it is a timeout event drain packet_ins. 
+
+		//If it is a timeout event drain packet_ins.
 		//This draining is necessary since PKT_IN pipe
 		//is non-blocking (in order to not block processing threads)
 		//so if a PKT_IN was enqueued but write() to the pipe failed
-		//Those packets would never be drained otherwise 
+		//Those packets would never be drained otherwise
 		if(nfds == 0)
-			process_packet_ins();	
-			
-	
-		//check timers expiration 
+			process_packet_ins();
+
+
+		//check timers expiration
 		process_timeouts();
 	}
 
 	//Cleanup packet-in
 	destroy_packetin_pipe();
-	
+
 	//Cleanup epoll fd
 	close(efd);
-	
+
 	//Printing some information
-	ROFL_DEBUG(DRIVER_NAME" [bg] Finishing thread execution\n"); 
+	ROFL_DEBUG(DRIVER_NAME" [bg] Finishing thread execution\n");
 
 	//Exit
-	pthread_exit(NULL);	
+	pthread_exit(NULL);
 }
 
 /**

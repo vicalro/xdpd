@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef PM_EXT_H
-#define PM_EXT_H 
+#define PM_EXT_H
 
 #include <string>
 #include <list>
@@ -42,11 +42,11 @@ public:
 	* This section contains the API to manage NF. This includes NF creation, NF removal,
 	* and NF reconfiguration
 	*/
-	
+
 	//
 	//NF operations
 	//
-	
+
 	/**
 	* @name create_nf_port
 	* @brief Create a NF port named nf_name
@@ -56,7 +56,7 @@ public:
 	* @param nf_type				Type of the NF to be created
 	*/
 	static void create_nf_port(std::string& nf_name, std::string& nf_port_name, port_type_t nf_type);
-	
+
 	/**
 	* @name destroy_nf_nf
 	* @brief Destroy a NF port named nf_port_name
@@ -66,10 +66,10 @@ public:
 	static void destroy_nf_port(std::string& nf_port_name);
 
 	//TODO: reconfigure a NF
-	
+
 	// [+] Add more here..
 };
 
-}// namespace xdpd 
+}// namespace xdpd
 
 #endif /* PM_EXT_H_ */

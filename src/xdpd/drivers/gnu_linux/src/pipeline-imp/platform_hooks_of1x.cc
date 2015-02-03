@@ -24,7 +24,7 @@ using namespace xdpd::gnu_linux;
 */
 rofl_result_t platform_post_init_of1x_switch(of1x_switch_t* sw){
 	unsigned int i;
-	
+
 	//Create GNU/Linux FWD_Module additional state (platform state)
 	switch_platform_state_t* ls_int = (switch_platform_state_t*)calloc(1, sizeof(switch_platform_state_t));
 
@@ -35,12 +35,12 @@ rofl_result_t platform_post_init_of1x_switch(of1x_switch_t* sw){
 
 	//Set number of buffers
 	sw->pipeline.num_of_buffers = LSI_PKT_IN_STORAGE_MAX_BUF;
-	
+
 	//Set the actions and matches supported by this platform
 	for(i=0; i<sw->pipeline.num_of_tables; i++){
 		of1x_flow_table_config_t *config = &(sw->pipeline.tables[i].config);
 		of1x_group_table_config_t *group_config = &(sw->pipeline.groups->config);
-	
+
 		/*
 		* Lets set to zero the unssuported matches and actions.
 		*/
@@ -48,15 +48,15 @@ rofl_result_t platform_post_init_of1x_switch(of1x_switch_t* sw){
 		//Matches
 		bitmap128_unset(&config->match, OF1X_MATCH_IPV6_EXTHDR);
 		bitmap128_unset(&config->wildcards, OF1X_MATCH_IPV6_EXTHDR);
-		
+
 		bitmap128_unset(&config->match, OF1X_MATCH_TUNNEL_ID);
 		bitmap128_unset(&config->wildcards, OF1X_MATCH_TUNNEL_ID);
 
 		//Actions
-		bitmap128_unset(&config->apply_actions, OF1X_AT_SET_FIELD_IPV6_EXTHDR);	
-		bitmap128_unset(&config->apply_actions, OF1X_AT_SET_FIELD_TUNNEL_ID);	
+		bitmap128_unset(&config->apply_actions, OF1X_AT_SET_FIELD_IPV6_EXTHDR);
+		bitmap128_unset(&config->apply_actions, OF1X_AT_SET_FIELD_TUNNEL_ID);
 		bitmap128_unset(&config->apply_actions, OF1X_AT_EXPERIMENTER);
-		
+
 		//Group Table
 		bitmap128_unset(&group_config->supported_actions, OF1X_AT_SET_FIELD_IPV6_EXTHDR);
 		bitmap128_unset(&group_config->supported_actions, OF1X_AT_SET_FIELD_TUNNEL_ID);
@@ -67,17 +67,17 @@ rofl_result_t platform_post_init_of1x_switch(of1x_switch_t* sw){
 }
 
 rofl_result_t platform_pre_destroy_of1x_switch(of1x_switch_t* sw){
-	
+
 	switch_platform_state_t* ls_int =  (switch_platform_state_t*)sw->platform_state;
 
 	//There should NOT be any PKT_INs pending
 	if(ls_int->pkt_in_queue->size() != 0)
-		assert(0);	
-	
+		assert(0);
+
 	delete ls_int->pkt_in_queue;
 	delete ls_int->storage;
 	free(sw->platform_state);
-	
+
 	return ROFL_SUCCESS;
 }
 
@@ -94,22 +94,22 @@ void platform_of1x_packet_in(const of1x_switch_t* sw, uint8_t table_id, datapack
 	switch_platform_state_t* ls_state = (switch_platform_state_t*)sw->platform_state;
 
 	ROFL_DEBUG(DRIVER_NAME" Enqueuing PKT_IN event for packet(%p) in switch: %s\n",pkt,sw->name);
-	
+
 	//Recover platform state and fill it so that state can be recovered afterwards
 	pkt_x86 = (datapacketx86*)pkt->platform_state;
 	pkt_x86->pktin_table_id = table_id;
 	pkt_x86->pktin_reason = reason;
 	pkt_x86->pktin_send_len = send_len;
-	
-	//Timestamp SB6_PRE	
+
+	//Timestamp SB6_PRE
 	TM_STAMP_STAGE(pkt, TM_SB5_PRE);
-		
+
 	//Enqueue
 	if( ls_state->pkt_in_queue->non_blocking_write(pkt) == ROFL_SUCCESS ){
 		//Notify
 		notify_packet_in();
-			
-		//Timestamp SB6_SUCCESS	
+
+		//Timestamp SB6_SUCCESS
 		TM_STAMP_STAGE(pkt, TM_SB5_SUCCESS);
 	}else{
 		ROFL_DEBUG(DRIVER_NAME" PKT_IN for packet(%p) could not be sent for sw:%s (PKT_IN queue full). Dropping..\n",pkt,sw->name);
@@ -122,8 +122,8 @@ void platform_of1x_packet_in(const of1x_switch_t* sw, uint8_t table_id, datapack
 }
 
 //Flow removed
-void platform_of1x_notify_flow_removed(const of1x_switch_t* sw, 	
-						of1x_flow_remove_reason_t reason, 
+void platform_of1x_notify_flow_removed(const of1x_switch_t* sw,
+						of1x_flow_remove_reason_t reason,
 						of1x_flow_entry_t* removed_flow_entry){
 
 	hal_cmm_process_of1x_flow_removed(sw->dpid, (uint8_t)reason, removed_flow_entry);

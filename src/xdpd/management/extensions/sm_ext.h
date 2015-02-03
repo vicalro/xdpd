@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef SWITCH_MANAGER_EXTENSIONS_H
-#define SWITCH_MANAGER_EXTENSIONS_H 
+#define SWITCH_MANAGER_EXTENSIONS_H
 
 #include <stdbool.h>
 #include <inttypes.h>

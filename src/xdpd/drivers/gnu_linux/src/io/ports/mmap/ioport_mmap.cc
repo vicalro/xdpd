@@ -174,7 +174,7 @@ inline void ioport_mmap::fill_vlan_pkt(struct tpacket2_hdr *hdr, datapacketx86 *
 }
 
 // handle read
-datapacket_t* ioport_mmap::read(){
+datapacket_t* ioport_mmap::read__(){
 
 	struct tpacket2_hdr *hdr;
 	struct sockaddr_ll *sll;
@@ -340,7 +340,10 @@ unsigned int ioport_mmap::write(unsigned int q_id, unsigned int num_of_buckets){
 		if(unlikely(pkt_x86->get_buffer_length() > mps)){
 			//This should NEVER happen
 			ROFL_ERR(DRIVER_NAME"[mmap:%s] Packet length above the Max Packet Size (MPS). Packet length: %u, MPS %u.. discarding\n", of_port_state->name, pkt_x86->get_buffer_length(), mps);
+
+#ifdef ASSERT_PKT_EXCEEDS_MTU
 			assert(0);
+#endif
 
 			//Return buffer to the pool
 			bufferpool::release_buffer(pkt);

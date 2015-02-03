@@ -42,6 +42,8 @@ ioport::ioport(switch_port_t* of_ps, unsigned int q_num){
 		ROFL_ERR(DRIVER_NAME" Unable to initialize ioport's rwlock\n");
 		assert(0);
 	}
+
+	sw_ipv4_frag_filter_status = sw_ipv4_reas_filter_status = false;
 }
 ioport::~ioport(){
 	//Drain queues first
@@ -114,7 +116,14 @@ rofl_result_t ioport::set_advertise_config(uint32_t advertised){
 void ioport::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 	datapacketx86* pack = (datapacketx86*)pkt->platform_state;
 
-	if(unlikely(pack->get_buffer_length() > mps)){
+	assert(of_port_state->attached_sw != NULL);
+
+	//Cache it locally
+	switch_platform_state_t* sw_state = (switch_platform_state_t*)(of_port_state->attached_sw->platform_state);
+	if(unlikely(sw_ipv4_frag_filter_status != sw_state->ipv4_frag_filter_status))
+		sw_ipv4_frag_filter_status = sw_state->ipv4_frag_filter_status;
+
+	if(unlikely(pack->get_buffer_length() > mps) && sw_ipv4_frag_filter_status){
 		unsigned int i, nof;
 		datapacket_t* frags[IPV4_MAX_FRAG];
 
@@ -141,4 +150,41 @@ void ioport::enqueue_packet(datapacket_t* pkt, unsigned int q_id){
 		enqueue_packet__(pkt, q_id);
 	}
 }
-#endif
+#endif //COMPILE_IPV4_FRAG_FILTER_SUPPORT
+
+#ifdef COMPILE_IPV4_REAS_FILTER_SUPPORT
+
+datapacket_t* ioport::read(void){
+	datapacket_t* pkt;
+	datapacketx86* pack;
+	cpc_ipv4_hdr_t* ipv4;
+
+READ_NEXT:
+	pkt = read__();
+	if(!pkt)
+		return NULL;
+	pack = (datapacketx86*)pkt->platform_state;
+	ipv4 = (cpc_ipv4_hdr_t*)get_ipv4_hdr(&pack->clas_state, 0);
+
+	//Cache it locally
+	switch_platform_state_t* sw_state = (switch_platform_state_t*)(of_port_state->attached_sw->platform_state);
+	if(unlikely(sw_ipv4_reas_filter_status != sw_state->ipv4_reas_filter_status))
+		sw_ipv4_reas_filter_status = sw_state->ipv4_reas_filter_status;
+
+
+	//Check if it is a fragment
+	if(ipv4 && unlikely(ipv4_is_fragment(ipv4)) && sw_ipv4_reas_filter_status){
+		assert(of_port_state->attached_sw->platform_state != NULL);
+		pkt = gnu_linux_reas_ipv4_pkt(of_port_state->attached_sw, &pkt, ipv4);
+		if(pkt)
+			//Packet successfully reassembled
+			return pkt;
+		else
+			//Fragment stored (or reassembly failed)
+			goto READ_NEXT;
+	}
+
+	return pkt;
+}
+
+#endif //COMPILE_IPV4_REAS_FILTER_SUPPORT

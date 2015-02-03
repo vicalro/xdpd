@@ -16,10 +16,22 @@
 #include <rofl/datapath/pipeline/openflow/openflow1x/of1x_switch.h>
 
 #include "../processing/ls_internal_state.h"
+#include "../io/packet_classifiers/pktclassifier.h"
 #include "../config.h"
 
 //C++ extern C
 ROFL_BEGIN_DECLS
+
+static inline void gnu_linux_ipv4_set_offset(cpc_ipv4_hdr_t* ipv4, uint16_t val){
+	uint16_t* tmp = (uint16_t*)ipv4->offset_flags; //Avoid annoying aliasing warnings
+	*tmp |= HTONB16(val&0x1FFF);
+}
+
+static inline uint16_t gnu_linux_ipv4_get_offset(cpc_ipv4_hdr_t* ipv4){
+	uint16_t* tmp = (uint16_t*)ipv4->offset_flags; //Avoid annoying aliasing warnings
+	return NTOHB16(*tmp)&0x1FFF;
+}
+
 
 /**
 * @brief Fragment IPv4 packet
@@ -37,15 +49,31 @@ ROFL_BEGIN_DECLS
 */
 void gnu_linux_frag_ipv4_pkt(datapacket_t** pkt, unsigned int mps, unsigned int* nof, datapacket_t** frags);
 
+//mgmt routines
 hal_result_t gnu_linux_enable_ipv4_frag_filter(const uint64_t dpid);
 hal_result_t gnu_linux_disable_ipv4_frag_filter(const uint64_t dpid);
 bool gnu_linux_ipv4_frag_filter_status(const uint64_t dpid);
 
 
+/**
+* @brief Reasemble IPv4 packet
+*
+* On success the reasembled, already classified packet is returned. On partial
+* reasembly, NULL is returned, and *pkt is also set to NULL.
+*
+* The implementation is optimized for *ordered* reassemblies.
+*/
+datapacket_t* gnu_linux_reas_ipv4_pkt(of_switch_t* sw, datapacket_t** pkt, cpc_ipv4_hdr_t* ipv4);
+
+/**
+* Expire incomplete fragments
+*/
+void gnu_linux_reas_ipv4_expire_frag_sets(of_switch_t* sw);
+
+//mgmt routines
 hal_result_t gnu_linux_enable_ipv4_reas_filter(const uint64_t dpid);
 hal_result_t gnu_linux_disable_ipv4_reas_filter(const uint64_t dpid);
 bool gnu_linux_ipv4_reas_filter_status(const uint64_t dpid);
-
 
 //C++ extern C
 ROFL_END_DECLS

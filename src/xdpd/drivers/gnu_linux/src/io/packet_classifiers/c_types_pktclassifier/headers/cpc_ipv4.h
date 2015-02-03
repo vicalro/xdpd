@@ -35,34 +35,31 @@ typedef struct cpc_ipv4_hdr {
 
 inline static
 void ipv4_calc_checksum(void *hdr){
-	int i;
-
-	size_t datalen = sizeof(cpc_ipv4_hdr_t);
+	int wnum;
+	uint32_t sum, tmp;
+	uint16_t res16, *word16;
 
 	// force header checksum to 0x0000
-	((cpc_ipv4_hdr_t*)hdr)->checksum = 0;
+	cpc_ipv4_hdr_t* ipv4 = (cpc_ipv4_hdr_t*)hdr;
+	ipv4->checksum = 0;
 
 	// pointer on 16bit words
-	uint16_t *word16 = (uint16_t*)hdr;
-	// number of 16bit words
-	int wnum = (datalen / (sizeof(uint16_t)));
-	// sum
-	uint32_t sum = 0;
+	word16 = (uint16_t*)hdr;
 
-	for (i = 0; i < wnum; i++){
-		uint32_t tmp = (uint32_t)(word16[i]);
+	// number of 16bit words
+	wnum = (((ipv4)->ihlvers&0x0F)*4 ) / sizeof(uint16_t);
+
+	//Sum
+	sum = 0;
+	while( (--wnum) >= 0){
+		//Prevent aliasing warnings
+		tmp = (uint32_t)(word16[wnum]);
 		sum += tmp;
 	}
 
-	uint16_t res16 = (sum & 0x0000ffff) + ((sum & 0xffff0000) >> 16);
+	res16 = (sum & 0x0000ffff) + ((sum & 0xffff0000) >> 16);
 
 	((cpc_ipv4_hdr_t*)hdr)->checksum = ~res16;
-};
-
-inline static
-bool ipv4_is_fragment(void *hdr){
-	return 	((cpc_ipv4_hdr_t*)hdr)->offset_flags[1] |
-		(((cpc_ipv4_hdr_t*)hdr)->offset_flags[0]& ~OF1X_2MSBITS_MASK);
 };
 
 inline static
@@ -203,5 +200,12 @@ inline static
 void clear_ipv4_MF_bit(void *hdr){
 	((cpc_ipv4_hdr_t*)hdr)->offset_flags[0] = ((cpc_ipv4_hdr_t*)hdr)->offset_flags[0] & ~OF1X_BIT5_MASK;
 };
+
+inline static
+bool ipv4_is_fragment(void *hdr){
+	return has_ipv4_MF_bit_set(hdr) || ( ((cpc_ipv4_hdr_t*)hdr)->offset_flags[1] |
+		(((cpc_ipv4_hdr_t*)hdr)->offset_flags[0]& ~OF1X_2MSBITS_MASK));
+};
+
 
 #endif //_CPC_IPV4_H_

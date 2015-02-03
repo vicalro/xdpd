@@ -1,6 +1,8 @@
 #ifndef PACKET_IMPL_INLINE_CLASSIFIER__
 #define PACKET_IMPL_INLINE_CLASSIFIER__
 
+#include <rofl.h>
+
 /**
 * @file packet_proto_meta_imp.h
 * @author Marc Sune<marc.sune (at) bisdn.de>
@@ -96,8 +98,13 @@
 // Routines
 //
 
-//Checksums calculator
+//Extern C
+ROFL_BEGIN_DECLS
+
+//Checksum calculation routine (in software)
+#if defined(ROFL_PIPELINE_INLINE_PP_PLATFORM_FUNCS)
 static inline
+#endif
 void calculate_checksums_in_software(datapacket_t* pkt){
 
 #ifndef EMPTY_PACKET_PROCESSING_ROUTINES
@@ -221,6 +228,9 @@ void calculate_checksums_in_software(datapacket_t* pkt){
 #endif /* EMPTY_PACKET_PROCESSING_ROUTINES */
 
 }
+
+//Extern C
+ROFL_END_DECLS
 
 //Getters
 STATIC_PACKET_INLINE__
@@ -2132,7 +2142,6 @@ void platform_packet_push_gre(datapacket_t* pkt, uint16_t ether_type)
 #endif /* EMPTY_PACKET_PROCESSING_ROUTINES */
 
 }
-
 
 #endif //GET_CLAS_STATE_PTR() check
 #endif //Guards
