@@ -2,6 +2,7 @@
 #include <rofl/common/utils/c_logger.h>
 #include <rofl/datapath/hal/openflow/openflow1x/of1x_cmm.h>
 
+#include "../processing/ls_internal_state.h"
 #include "bufferpool.h"
 #include "datapacket_storage.h"
 #include "dpdk_datapacket.h"
@@ -14,6 +15,7 @@ static pthread_t pktin_thread;
 static sem_t pktin_drained;
 static pthread_mutex_t drain_mutex=PTHREAD_MUTEX_INITIALIZER;
 
+using namespace xdpd::gnu_linux_dpdk;
 using namespace xdpd::gnu_linux;
 
 //MBUF pool
@@ -71,7 +73,8 @@ static void* process_packet_ins(void* param){
 		pkt_dpdk = (datapacket_dpdk_t*)pkt->platform_state;
 		mbuf = ((datapacket_dpdk_t*)pkt->platform_state)->mbuf;
 		sw = (of1x_switch_t*)pkt->sw;
-		dps = (datapacket_storage*)pkt->sw->platform_state;
+		switch_platform_state_t *lsw = (switch_platform_state_t*)sw->platform_state;
+		dps = (datapacket_storage*)lsw->storage;
 
 		ROFL_DEBUG(DRIVER_NAME"[pktin_dispatcher] Processing PKT_IN for packet(%p), mbuf %p, switch %p\n", pkt, mbuf, sw);
 		//Store packet in the storage system. Packet is NOT returned to the bufferpool

@@ -21,12 +21,14 @@
 #include <rofl/datapath/pipeline/physical_switch.h>
 #include <rofl/datapath/hal/driver.h>
 #include <rofl/datapath/hal/cmm.h>
+#include "processing/ls_internal_state.h"
 #include "io/bufferpool.h"
 #include "io/iface_manager.h"
 #include "io/datapacket_storage.h"
 #include "util/time_utils.h"
 
 using namespace xdpd::gnu_linux;
+using namespace xdpd::gnu_linux_dpdk;
 
 //Local static variable for background manager thread
 static pthread_t bg_thread;
@@ -97,7 +99,8 @@ int process_timeouts(){
 			if(logical_switches[i] != NULL){
 
 				//Recover storage pointer
-				dps = (datapacket_storage*)logical_switches[i]->platform_state;
+				switch_platform_state_t *lsw = (switch_platform_state_t*) logical_switches[i]->platform_state;
+				dps = (datapacket_storage*)lsw->storage;
 
 				//Loop until the oldest expired packet is taken out
 				while(dps->oldest_packet_needs_expiration(&buffer_id)){

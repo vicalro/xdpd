@@ -22,7 +22,7 @@
 #include <rte_spinlock.h>
 #include <rte_ring.h>
 
-
+#include "../processing/ls_internal_state.h"
 #include "../io/pktin_dispatcher.h"
 #include "../io/bufferpool.h"
 #include "../io/datapacket_storage.h"
@@ -30,6 +30,7 @@
 
 
 using namespace xdpd::gnu_linux;
+using namespace xdpd::gnu_linux_dpdk;
 
 //MBUF pool
 extern struct rte_mempool* pool_direct;
@@ -44,10 +45,11 @@ rofl_result_t platform_post_init_of1x_switch(of1x_switch_t* sw){
 
 	unsigned int i;
 
-	sw->platform_state = (of_switch_platform_state_t*)new datapacket_storage( IO_PKT_IN_STORAGE_MAX_BUF, IO_PKT_IN_STORAGE_EXPIRATION_S); // todo make this value configurable
-
 	if(unlikely(!sw->platform_state))
 		return ROFL_FAILURE;
+	
+	switch_platform_state_t *lsw = (switch_platform_state_t*) sw->platform_state;
+	lsw->storage = new datapacket_storage( IO_PKT_IN_STORAGE_MAX_BUF, IO_PKT_IN_STORAGE_EXPIRATION_S); // todo make this value configurable
 
 	//Set number of buffers
 	sw->pipeline.num_of_buffers = IO_PKT_IN_STORAGE_MAX_BUF;
@@ -87,7 +89,8 @@ rofl_result_t platform_pre_destroy_of1x_switch(of1x_switch_t* sw){
 	
 	ROFL_DEBUG(DRIVER_NAME"Remaining PKT_INs for switch 0x%llx(%p) drained!\n", (long long unsigned int)sw->dpid, sw);
 
-	delete (datapacket_storage*)sw->platform_state;
+	switch_platform_state_t *lsw = (switch_platform_state_t*) sw->platform_state;
+	delete (datapacket_storage*)lsw->storage;
 	return ROFL_SUCCESS;
 }
 
