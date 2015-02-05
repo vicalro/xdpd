@@ -119,4 +119,8 @@
 //fragmentation filters
 #define COMPILE_IP_FRAG_FILTER_SUPPORT
 
+//This compiles the support for allowing enabling/disabling
+//reassembly filters
+#define COMPILE_IP_REAS_FILTER_SUPPORT
+
 #endif //XDPD_GNU_LINUX_XDPD_CONFIG_H
