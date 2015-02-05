@@ -6,6 +6,7 @@ noinst_LTLIBRARIES = libxdpd_driver_gnu_linux_dpdk_src.la
 
 libxdpd_driver_gnu_linux_dpdk_src_la_SOURCES = bg_taskmanager.cc config.cc
 libxdpd_driver_gnu_linux_dpdk_src_la_LIBADD = \
+		filters/libxdpd_driver_gnu_linux_dpdk_filters.la\
 		hal-imp/libxdpd_driver_gnu_linux_dpdk_src_hal_imp.la\
 		io/libxdpd_driver_gnu_linux_dpdk_src_io.la\
 		pipeline-imp/libxdpd_driver_gnu_linux_dpdk_src_pipeline_imp.la\
