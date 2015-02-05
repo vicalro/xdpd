@@ -30,6 +30,7 @@
 #include "../io/iface_manager.h"
 #include "../io/pktin_dispatcher.h"
 #include "../processing/processing.h"
+#include "../filters/ip_far.h"
 
 //Extensions
 #include "nf_extensions.h"
@@ -39,6 +40,7 @@ extern int optind;
 struct rte_mempool *pool_direct = NULL, *pool_indirect = NULL;
 
 using namespace xdpd::gnu_linux;
+using namespace xdpd::gnu_linux_dpdk;
 
 //Some useful macros
 #define STR(a) #a
@@ -132,13 +134,23 @@ hal_result_t hal_driver_init(hal_extension_ops_t* extensions, const char* extra_
 		return HAL_FAILURE;
 	}
 
-#ifdef GNU_LINUX_DPDK_ENABLE_NF
 	//Add extensions
 	memset(extensions, 0, sizeof(hal_extension_ops_t));
+#ifdef GNU_LINUX_DPDK_ENABLE_NF
 	extensions->nf_ports.create_nf_port = hal_driver_dpdk_nf_create_nf_port;
 	extensions->nf_ports.destroy_nf_port = hal_driver_dpdk_nf_destroy_nf_port;
 #endif
-
+#ifdef COMPILE_IP_FRAG_FILTER_SUPPORT
+	extensions->ipv4_frag_reas.enable_ipv4_frag_filter = gnu_linux_dpdk_enable_ip_frag_filter;
+	extensions->ipv4_frag_reas.disable_ipv4_frag_filter = gnu_linux_dpdk_disable_ip_frag_filter;
+	extensions->ipv4_frag_reas.ipv4_frag_filter_status = gnu_linux_dpdk_ip_frag_filter_status;
+#endif
+#ifdef COMPILE_IP_REAS_FILTER_SUPPORT
+	extensions->ipv4_frag_reas.enable_ipv4_reas_filter = gnu_linux_dpdk_enable_ip_reas_filter;
+	extensions->ipv4_frag_reas.disable_ipv4_frag_filter = gnu_linux_dpdk_disable_ip_reas_filter;
+	extensions->ipv4_frag_reas.ipv4_reas_filter_status = gnu_linux_dpdk_ip_reas_filter_status;
+#endif
+	
 	return HAL_SUCCESS; 
 }
 

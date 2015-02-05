@@ -7,6 +7,8 @@
 
 #include <rte_config.h>
 #include <rte_ethdev.h>
+#include <rofl.h>
+#include <rofl/datapath/hal/cmm.h>
 
 //Bug in DPDK
 #ifdef __cplusplus
@@ -24,6 +26,16 @@ extern "C" {
 
 extern struct rte_mempool *pool_direct;
 extern struct rte_mempool *pool_indirect;
+
+namespace xdpd{
+namespace gnu_linux_dpdk{
+
+hal_result_t gnu_linux_dpdk_enable_ip_frag_filter(const uint64_t dpid);
+hal_result_t gnu_linux_dpdk_disable_ip_frag_filter(const uint64_t dpid);
+bool gnu_linux_dpdk_ip_frag_filter_status(const uint64_t dpid);
+hal_result_t gnu_linux_dpdk_enable_ip_reas_filter(const uint64_t dpid);
+hal_result_t gnu_linux_dpdk_disable_ip_reas_filter(const uint64_t dpid);
+bool gnu_linux_dpdk_ip_reas_filter_status(const uint64_t dpid);
 
 static inline
 int32_t gnu_linux_dpdk_frag_ip_packet(switch_port_t* port, datapacket_t* pkt, struct rte_mbuf **pkts_out){
@@ -112,5 +124,8 @@ static inline
 void reassembly_ip_packet(){
 	
 }
+
+}// namespace xdpd{
+}// namespace gnu_linux_dpdk{
 
 #endif //_IP_FAR_H_
