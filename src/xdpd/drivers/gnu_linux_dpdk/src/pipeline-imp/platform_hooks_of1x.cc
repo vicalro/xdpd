@@ -45,12 +45,13 @@ rofl_result_t platform_post_init_of1x_switch(of1x_switch_t* sw){
 
 	unsigned int i;
 
+	switch_platform_state_t* ls_int = (switch_platform_state_t*)calloc(1, sizeof(switch_platform_state_t));
+	ls_int->storage = new datapacket_storage( IO_PKT_IN_STORAGE_MAX_BUF, IO_PKT_IN_STORAGE_EXPIRATION_S); // todo make this value configurable
+	sw->platform_state = (of_switch_platform_state_t*) ls_int;
+
 	if(unlikely(!sw->platform_state))
 		return ROFL_FAILURE;
 	
-	switch_platform_state_t *lsw = (switch_platform_state_t*) sw->platform_state;
-	lsw->storage = new datapacket_storage( IO_PKT_IN_STORAGE_MAX_BUF, IO_PKT_IN_STORAGE_EXPIRATION_S); // todo make this value configurable
-
 	//Set number of buffers
 	sw->pipeline.num_of_buffers = IO_PKT_IN_STORAGE_MAX_BUF;
 	
