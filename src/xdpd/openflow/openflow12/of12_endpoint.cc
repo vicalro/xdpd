@@ -87,12 +87,12 @@ of12_endpoint::handle_features_request(
 
 			port.set_config(config);
 			port.set_state(_port->state);
-			port.set_curr(_port->curr);
-			port.set_advertised(_port->advertised);
-			port.set_supported(_port->supported);
-			port.set_peer(_port->peer);
-			port.set_curr_speed(of12_translation_utils::get_port_speed_kb(_port->curr_speed));
-			port.set_max_speed(of12_translation_utils::get_port_speed_kb(_port->curr_max_speed));
+			port.set_ethernet().set_curr(_port->curr);
+			port.set_ethernet().set_advertised(_port->advertised);
+			port.set_ethernet().set_supported(_port->supported);
+			port.set_ethernet().set_peer(_port->peer);
+			port.set_ethernet().set_curr_speed(of12_translation_utils::get_port_speed_kb(_port->curr_speed));
+			port.set_ethernet().set_max_speed(of12_translation_utils::get_port_speed_kb(_port->curr_max_speed));
 
 			ports.add_port(_port->of_port_num) = port;
 		}
@@ -485,7 +485,7 @@ of12_endpoint::handle_queue_stats_request(
 
 		if((port != NULL) && (of12switch->logical_ports[n].attachment_state == LOGICAL_PORT_STATE_ATTACHED)/* && (port->of_port_num == portnum)*/){
 
-			if (OFPQ_ALL == queue_id){
+			if (rofl::openflow12::OFPQ_ALL == queue_id){
 
 				// TODO: iterate over all queues
 
@@ -777,12 +777,12 @@ rofl_result_t of12_endpoint::notify_port_attached(const switch_port_snapshot_t* 
 		ofport.set_name(std::string(port->name));
 		ofport.set_config(config);
 		ofport.set_state(port->state);
-		ofport.set_curr(port->curr);
-		ofport.set_advertised(port->advertised);
-		ofport.set_supported(port->supported);
-		ofport.set_peer(port->peer);
-		ofport.set_curr_speed(of12_translation_utils::get_port_speed_kb(port->curr_speed));
-		ofport.set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
+		ofport.set_ethernet().set_curr(port->curr);
+		ofport.set_ethernet().set_advertised(port->advertised);
+		ofport.set_ethernet().set_supported(port->supported);
+		ofport.set_ethernet().set_peer(port->peer);
+		ofport.set_ethernet().set_curr_speed(of12_translation_utils::get_port_speed_kb(port->curr_speed));
+		ofport.set_ethernet().set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
 
 		//Send message
 		rofl::crofbase::send_port_status_message(cauxid(0), openflow12::OFPPR_ADD, ofport);
@@ -812,12 +812,12 @@ rofl_result_t of12_endpoint::notify_port_detached(const switch_port_snapshot_t* 
 		ofport.set_name(std::string(port->name));
 		ofport.set_config(config);
 		ofport.set_state(port->state);
-		ofport.set_curr(port->curr);
-		ofport.set_advertised(port->advertised);
-		ofport.set_supported(port->supported);
-		ofport.set_peer(port->peer);
-		ofport.set_curr_speed(of12_translation_utils::get_port_speed_kb(port->curr_speed));
-		ofport.set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
+		ofport.set_ethernet().set_curr(port->curr);
+		ofport.set_ethernet().set_advertised(port->advertised);
+		ofport.set_ethernet().set_supported(port->supported);
+		ofport.set_ethernet().set_peer(port->peer);
+		ofport.set_ethernet().set_curr_speed(of12_translation_utils::get_port_speed_kb(port->curr_speed));
+		ofport.set_ethernet().set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
 
 		//Send message
 		rofl::crofbase::send_port_status_message(cauxid(0), openflow12::OFPPR_DELETE, ofport);
@@ -849,12 +849,12 @@ rofl_result_t of12_endpoint::notify_port_status_changed(const switch_port_snapsh
 		ofport.set_name(std::string(port->name));
 		ofport.set_config(config);
 		ofport.set_state(port->state);
-		ofport.set_curr(port->curr);
-		ofport.set_advertised(port->advertised);
-		ofport.set_supported(port->supported);
-		ofport.set_peer(port->peer);
-		ofport.set_curr_speed(of12_translation_utils::get_port_speed_kb(port->curr_speed));
-		ofport.set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
+		ofport.set_ethernet().set_curr(port->curr);
+		ofport.set_ethernet().set_advertised(port->advertised);
+		ofport.set_ethernet().set_supported(port->supported);
+		ofport.set_ethernet().set_peer(port->peer);
+		ofport.set_ethernet().set_curr_speed(of12_translation_utils::get_port_speed_kb(port->curr_speed));
+		ofport.set_ethernet().set_max_speed(of12_translation_utils::get_port_speed_kb(port->curr_max_speed));
 
 		//Send message
 		rofl::crofbase::send_port_status_message(cauxid(0), openflow12::OFPPR_MODIFY, ofport);
