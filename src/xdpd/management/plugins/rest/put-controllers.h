@@ -17,6 +17,11 @@ namespace put{
 	* Create a vlink
 	*/
 	void create_vlink(const http::server::request &, http::server::reply &, boost::cmatch&);
+	
+	/*
+	* Add a new controller to the LSI
+	*/
+	void add_ctl(const http::server::request &, http::server::reply &, boost::cmatch&);	
 
 } //namespace put
 } //namespace controllers

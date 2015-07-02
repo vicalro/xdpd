@@ -358,6 +358,89 @@ void create_lsi(const http::server::request &req, http::server::reply &rep, boos
 	//There is no need to return anything
 }
 
+
+void add_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
+
+	//call switch_manager to add a new controller to the LSI
+	// get IP & port from the req parameter (json?)
+	// check IP & port (if there is already a controller there, send error message)
+	std::stringstream ss;
+	std::string proto, ip, port;
+	enum rofl::csocket::socket_type_t socket_type;
+	rofl::cparams socket_params;
+	
+	//Perform security checks
+        if(!authorised(req,rep)) return;
+
+	std::string lsi_name = std::string(grps[1]);
+
+	//Check if LSI exists;
+        if(!switch_manager::exists_by_name(lsi_name)){
+                //Throw 404
+                std::stringstream ss;
+                ss<<"Invalid lsi '"<<lsi_name<<"'";
+                rep.content = ss.str();
+                rep.status = http::server::reply::not_found;
+                return;
+        }
+
+	// Get dpid
+	uint64_t dpid = switch_manager::get_switch_dpid(lsi_name);
+	//fprintf(stderr,"found dpid:%lu\n", dpid);
+	
+	// Parse data (protocol, IP & port)
+	try{
+		//Parse the input
+		json_spirit::Value val;
+
+		//First object must be "lsi"
+		json_spirit::read(req.content, val);
+
+		json_spirit::Object obj = val.get_obj();
+		obj = json_spirit::find_value(obj, "ctl").get_obj();
+
+		//Fill in parameters
+		proto = json_spirit::find_value(obj, "proto").get_str();
+		ip = json_spirit::find_value(obj, "ip").get_str();
+		port = json_spirit::find_value(obj, "port").get_str();
+
+	}catch(...){
+		//Something went wrong
+		std::stringstream ss;
+		ss<<"Unable to parse arguments for add controller";
+		rep.content = ss.str();
+		rep.status = http::server::reply::bad_request;
+		return;
+	}
+
+
+	//fprintf(stderr,"found proto: %s\n ip %s\n port %s\n", proto.c_str(), ip.c_str(), port.c_str());
+	//TODO Check parameters received (proto, ip & port)
+	if ( proto == "tcp" ){
+		socket_type = rofl::csocket::SOCKET_TYPE_PLAIN;
+	} else {
+		//Other types not supported
+		// TODO add SOCKET_TYPE_OPENSSL
+		return;
+	}
+	socket_params = rofl::csocket::get_default_params(socket_type);
+	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_HOSTNAME) = ip;
+	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_PORT) = port;
+
+	try{
+		ss<<"Adding Controller: " << lsi_name << " : " << proto;
+		switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
+	}catch(...){
+		//Something went wrong
+                std::stringstream ss;
+                ss<<"Unable to add controller to lsi '"<<lsi_name<<"'";
+                rep.content = ss.str();
+                rep.status = http::server::reply::internal_server_error;
+                return;
+	}
+	
+}
+
 } //namespace put
 
 namespace delete_{

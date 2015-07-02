@@ -100,6 +100,13 @@ static void srvthread (){
 		handler.register_put_path("/mgmt/create/vlink/(\\w+)/(\\w+)", boost::bind(controllers::put::create_vlink, _1, _2, _3));
 
 		//
+		// CONTROLLERS
+		//
+		handler.register_put_path("/mgmt/add/controller/(\\w+)", boost::bind(controllers::put::add_ctl, _1, _2, _3));
+		// delete ctl
+		// list ctls
+
+		//
 		//DELETE
 		//
 		handler.register_delete_path("/mgmt/destroy/lsi/(\\w+)", boost::bind(controllers::delete_::destroy_switch, _1, _2, _3));

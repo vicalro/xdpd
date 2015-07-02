@@ -56,6 +56,7 @@ def list_exec_commands():
 	string+='                               \t\t\t - Create a logical switch instance\n'
 	string+='   exec destroy lsi <lsi_name> \t\t\t - Destroy a logical switch instance\n'
 	string+='   exec create vlink <lsi1_name> <lsi2_name>\t - Create a virtual link between two logical switch instances\n'
+	string+='   exec add controller <lsi_name> <mode:ip:port>\n'
 	string+="\nExamples:\n\n"
 	string+='   exec port ge0 up\n'
 	string+='   exec attach port ge0 dp0\n'
@@ -170,6 +171,37 @@ def compose_url(url_array):
 	for section in url_array:
 		url +="/"+section
 	return url
+
+##
+# Parse add controller and compose json
+#
+def parse_add_controller(params):
+	obj = {}
+	ctl = obj["ctl"] = {}
+	splitted_vec = params[0].split(':')
+	
+	# Check number of parameters
+	if len(splitted_vec) != 3:
+		raise Exception("Wrong number of parameters. Use protocol:ip:port\nExample tcp:192.0.0.55:6633") 
+
+	if splitted_vec[0] == "tcp":
+		ctl["proto"] = "tcp"
+	elif splitted_vec[0] == "tcp+tls":
+		raise Exception("TLS not yet supported")
+	
+	if splitted_vec[1] == "":
+		#TODO check valid ip (dots, ping?)
+		raise Exception("Invalid IP")
+	else:
+		ctl["ip"] = splitted_vec[1]
+	
+	if splitted_vec[2] == "":
+		raise Exception("Error: Invalid port")
+	else:
+		ctl["port"] = splitted_vec[2]
+
+	return json.dumps(obj)
+
 
 ##
 # Parse create lsi and compose json
@@ -302,6 +334,25 @@ def execute(socket, command, req_confirm=False):
 		elif "destroy" in command:
 			data = ""
 			return rest(socket, compose_url(stripped), data, "DELETE")
+
+		elif "add" in command:
+			data = ""
+			if "controller" in command:
+				data = parse_add_controller(stripped[4:])
+				try: 
+					return rest(socket, compose_url(stripped[:4]), data, "PUT")
+				except Exception as e:	
+					return "error: "+str(e)
+			else:
+				return "Usage: exec add controller ..."
+
+		elif "remove" in command:
+			data = ""
+			if "controller" in command:
+                                return rest(socket. compose_url(stripped), data, "PUT")
+                        else:
+                                return "Usage: exec remove controller ..."
+
 		else:
 			return rest(socket, compose_url(stripped), "", "POST")
 	else:
@@ -478,7 +529,7 @@ class InteractivePrompt(cmd.Cmd):
 			print_less(result)
 
 	def complete_exec(self, text, line, start_index, end_index):
-		exec_cmds = ["port", "attach", "detach", "create", "destroy"]
+		exec_cmds = ["port", "attach", "detach", "create", "destroy", "add", "remove"]
 
 		for cmd in exec_cmds:
 			if cmd in line:
