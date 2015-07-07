@@ -173,7 +173,12 @@ public:
 	/**
 	 * disconnect from from controller
 	 */
-	static void rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid );
+	static void rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid);
+
+	/**
+	 * list the available controllers ids
+	 */
+	static void rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid> list);
 
 	//
 	// Other configuration parameters

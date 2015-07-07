@@ -35,6 +35,12 @@ namespace get{
 	void list_ports(const http::server::request &, http::server::reply &, boost::cmatch&);
 	void port_detail(const http::server::request &, http::server::reply &, boost::cmatch&);
 
+	/**
+	 * Controllers
+	 */
+	void list_ctls(const http::server::request &, http::server::reply &, boost::cmatch&);
+	void show_ctl(const http::server::request &, http::server::reply &, boost::cmatch&);
+
 } //namespace get
 } //namespace controllers
 } //namespace xdpd

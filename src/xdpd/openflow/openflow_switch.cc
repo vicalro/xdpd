@@ -46,3 +46,6 @@ void openflow_switch::rpc_disconnect_from_ctl(rofl::cctlid ctlid){
 	//}
 }
 
+void openflow_switch::rpc_list_ctls(std::list<rofl::cctlid> ctls_list){
+	endpoint->list_ctls(ctls_list);
+}

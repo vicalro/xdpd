@@ -236,6 +236,14 @@ void lsi_groups(const http::server::request &req,
 	rep.content = json_spirit::write(wrap, true);
 }
 
+void list_ctls(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
+	fprintf(stderr,"LIST CONTROLLERS CALLED\n");
+}
+
+void show_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
+	fprintf(stderr,"SHOW CONTROLLER CALLED\n");
+}
+
 } //namespace get
 
 
