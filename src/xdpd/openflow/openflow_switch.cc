@@ -36,7 +36,13 @@ void openflow_switch::rpc_connect_to_ctl(enum rofl::csocket::socket_type_t socke
 	endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap).connect(rofl::cauxid(0), socket_type, socket_params);
 }
 
-void openflow_switch::rpc_disconnect_from_ctl(enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
-	//endpoint->rpc_disconnect_from_ctl(socket_type, socket_params);
+void openflow_switch::rpc_disconnect_from_ctl(rofl::cctlid ctlid){
+	// TODO check for a valid ID
+	//if (endpoint->has_ctl(ctlid)){
+		endpoint->drop_ctl(ctlid);
+	//}
+	//else {
+	//	throw eOfSmNotFound;
+	//}
 }
 

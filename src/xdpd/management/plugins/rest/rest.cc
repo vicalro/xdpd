@@ -103,7 +103,7 @@ static void srvthread (){
 		// CONTROLLERS
 		//
 		handler.register_put_path("/mgmt/add/controller/(\\w+)", boost::bind(controllers::put::add_ctl, _1, _2, _3));
-		// delete ctl
+		handler.register_delete_path("/mgmt/remove/controller/(\\w+)/(\\w+)", boost::bind(controllers::delete_::rem_ctl, _1, _2, _3));
 		// list ctls
 
 		//

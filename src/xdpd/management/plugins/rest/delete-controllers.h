@@ -12,6 +12,7 @@ namespace delete_{
 	* Destroy an LSI
 	*/
 	void destroy_switch(const http::server::request &, http::server::reply &, boost::cmatch&);
+	void rem_ctl(const http::server::request &, http::server::reply &, boost::cmatch&);
 
 } //namespace delete_
 } //namespace controllers

@@ -407,7 +407,7 @@ switch_manager::rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_typ
 
 
 void
-switch_manager::rpc_disconnect_from_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
+switch_manager::rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid){
 
 	pthread_rwlock_wrlock(&switch_manager::rwlock);
 	
@@ -418,7 +418,7 @@ switch_manager::rpc_disconnect_from_ctl(uint64_t dpid, enum rofl::csocket::socke
 
 	//Get switch instance
 	openflow_switch* dp = switch_manager::switchs[dpid];
-	dp->rpc_disconnect_from_ctl(socket_type, socket_params);
+	dp->rpc_disconnect_from_ctl(ctlid);
 	pthread_rwlock_unlock(&switch_manager::rwlock);
 }
 

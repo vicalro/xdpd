@@ -24,6 +24,7 @@
 #include <rofl/common/csocket.h>
 #include <rofl/common/caddress.h>
 #include <rofl/common/croflexception.h>
+#include <rofl/common/cctlid.h>
 
 #include <rofl/datapath/pipeline/common/datapacket.h>
 #include <rofl/datapath/pipeline/openflow/of_switch.h>
@@ -172,7 +173,7 @@ public:
 	/**
 	 * disconnect from from controller
 	 */
-	static void rpc_disconnect_from_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
+	static void rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid );
 
 	//
 	// Other configuration parameters

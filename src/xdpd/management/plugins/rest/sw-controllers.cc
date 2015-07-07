@@ -478,6 +478,49 @@ void destroy_switch(const http::server::request &req, http::server::reply &rep, 
 	}
 }
 
+void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
+
+	std::stringstream ss;
+	std::string lsi_name;
+	std::string ctlid_str;
+	uint64_t dpid, ctl_id;
+
+	//Perform security checks
+	if(!authorised(req,rep)) return;	
+
+	lsi_name = std::string(grps[1]);
+	ctlid_str = std::string(grps[2]);
+
+	//Check if LSI exists;
+        if(!switch_manager::exists_by_name(lsi_name)){
+                //Throw 404
+                std::stringstream ss;
+                ss<<"Invalid lsi '"<<lsi_name<<"'";
+                rep.content = ss.str();
+                rep.status = http::server::reply::not_found;
+                return;
+        }
+
+	// Get dpid
+	dpid = switch_manager::get_switch_dpid(lsi_name);
+
+	// get Ctlid
+	ctl_id = atoi(ctlid_str.c_str());
+	rofl::cctlid ctlid(ctl_id);
+
+	try{
+		ss<<"Removing Controller: " << lsi_name << " : " << ctlid_str;
+		switch_manager::rpc_disconnect_from_ctl(dpid, ctlid);
+	}catch(...){
+		//Something went wrong
+                std::stringstream ss;
+                ss<<"Unable to remove controller from lsi '"<<lsi_name<<"'";
+                rep.content = ss.str();
+                rep.status = http::server::reply::internal_server_error;
+                return;
+	}
+}
+
 } //namespace delete
 } //namespace controllers
 } //namespace xdpd

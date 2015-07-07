@@ -57,6 +57,7 @@ def list_exec_commands():
 	string+='   exec destroy lsi <lsi_name> \t\t\t - Destroy a logical switch instance\n'
 	string+='   exec create vlink <lsi1_name> <lsi2_name>\t - Create a virtual link between two logical switch instances\n'
 	string+='   exec add controller <lsi_name> <mode:ip:port>\n'
+	string+='   exec remove controller <lsi_name> <ctl_id>\n'
 	string+="\nExamples:\n\n"
 	string+='   exec port ge0 up\n'
 	string+='   exec attach port ge0 dp0\n'
@@ -344,14 +345,14 @@ def execute(socket, command, req_confirm=False):
 				except Exception as e:	
 					return "error: "+str(e)
 			else:
-				return "Usage: exec add controller ..."
+				return "Usage: exec add controller <params>"
 
 		elif "remove" in command:
 			data = ""
 			if "controller" in command:
-                                return rest(socket. compose_url(stripped), data, "PUT")
+                                return rest(socket, compose_url(stripped), data, "DELETE")
                         else:
-                                return "Usage: exec remove controller ..."
+                                return "Usage: exec remove controller <id>"
 
 		else:
 			return rest(socket, compose_url(stripped), "", "POST")
@@ -529,7 +530,7 @@ class InteractivePrompt(cmd.Cmd):
 			print_less(result)
 
 	def complete_exec(self, text, line, start_index, end_index):
-		exec_cmds = ["port", "attach", "detach", "create", "destroy", "add", "remove"]
+		exec_cmds = ["port", "attach", "detach", "create", "destroy", "add controller", "remove controller"]
 
 		for cmd in exec_cmds:
 			if cmd in line:
