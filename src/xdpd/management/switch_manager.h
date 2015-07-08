@@ -178,7 +178,7 @@ public:
 	/**
 	 * list the available controllers ids
 	 */
-	static void rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid> list);
+	static void rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid> *list);
 
 	//
 	// Other configuration parameters

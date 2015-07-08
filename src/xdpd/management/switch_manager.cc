@@ -423,7 +423,7 @@ switch_manager::rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid){
 }
 
 void
-switch_manager::rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid> list){
+switch_manager::rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
 	pthread_rwlock_wrlock(&switch_manager::rwlock);
 	
 	if (switch_manager::switchs.find(dpid) == switch_manager::switchs.end()){

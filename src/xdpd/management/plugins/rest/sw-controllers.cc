@@ -238,10 +238,90 @@ void lsi_groups(const http::server::request &req,
 
 void list_ctls(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
 	fprintf(stderr,"LIST CONTROLLERS CALLED\n");
+	std::stringstream ss;
+	std::string lsi_name;
+	uint64_t dpid;
+	std::list<rofl::cctlid> list;
+	json_spirit::Object table;
+	
+	//Perform security checks
+        if(!authorised(req,rep)) return;
+
+	lsi_name = std::string(grps[1]);
+
+	fprintf(stderr,"listing controllers from lsi %s\n", lsi_name.c_str());
+
+	// Get dpid
+	try{
+		dpid = switch_manager::get_switch_dpid(lsi_name);
+	}catch(...){
+		ss<<"Unable to find a dpid for lsi " << lsi_name;
+		rep.content = ss.str();
+		rep.status = http::server::reply::bad_request;
+		return;
+	}
+	
+	fprintf(stderr, "dpid %lu\n", dpid);
+
+	try{
+		ss<<"Listing controllers from: " << lsi_name;
+		switch_manager::rpc_list_ctls(dpid, &list);
+	}catch(...){
+		fprintf(stderr, "ERROR switch_manager::rpc_list_ctls\n");
+		ss<<"Unable to get list of ctls from lsi '"<<lsi_name<<"'";
+		rep.content = ss.str();
+		rep.status = http::server::reply::internal_server_error;
+		return;
+	}
+
+	//Return data
+	std::list<std::string> list_str;
+	for(std::list<rofl::cctlid>::iterator it = list.begin(); it != list.end(); it++){
+		fprintf(stderr,"found ctl-ID %lu\n", it->get_ctlid());
+		std::stringstream ss_tmp;
+		ss_tmp << it->get_ctlid();
+		list_str.push_back(ss_tmp.str());
+	}
+
+	json_spirit::Value ids_(list_str.begin(), list_str.end());
+	table.push_back(json_spirit::Pair("ids", ids_));
+	rep.content = json_spirit::write(table, true);
 }
 
 void show_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
 	fprintf(stderr,"SHOW CONTROLLER CALLED\n");
+	std::stringstream ss;
+	std::string lsi_name, ctl_id;
+	uint64_t dpid;
+	
+	//Perform security checks
+        if(!authorised(req,rep)) return;
+
+	lsi_name = std::string(grps[1]);
+	ctl_id = std::string(grps[2]);
+
+	fprintf(stderr,"showing controller from lsi %s, id %s\n", lsi_name.c_str(), ctl_id.c_str());
+
+	// Get dpid
+	try{
+		dpid = switch_manager::get_switch_dpid(lsi_name);
+	}catch(...){
+		ss<<"Unable to find a dpid for lsi " << lsi_name;
+		rep.content = ss.str();
+		rep.status = http::server::reply::bad_request;
+		return;
+	}
+	
+	fprintf(stderr, "dpid %lu\n", dpid);
+#if 0
+	try{
+		ss<<"Listing controller info: " << lsi_name;
+		switch_manager::rpc_show_ctl(dpid, id, info);
+	}catch(...){
+		
+	}
+	//Return data
+#endif
 }
 
 } //namespace get
@@ -376,6 +456,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	std::string proto, ip, port;
 	enum rofl::csocket::socket_type_t socket_type;
 	rofl::cparams socket_params;
+	//json_spirit::Object table;
 	
 	//Perform security checks
         if(!authorised(req,rep)) return;
@@ -392,9 +473,8 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
                 return;
         }
 
-	// Get dpid
+	// Get dpid TODO check for failure
 	uint64_t dpid = switch_manager::get_switch_dpid(lsi_name);
-	//fprintf(stderr,"found dpid:%lu\n", dpid);
 	
 	// Parse data (protocol, IP & port)
 	try{
@@ -414,7 +494,6 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 
 	}catch(...){
 		//Something went wrong
-		std::stringstream ss;
 		ss<<"Unable to parse arguments for add controller";
 		rep.content = ss.str();
 		rep.status = http::server::reply::bad_request;
@@ -437,16 +516,19 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 
 	try{
 		ss<<"Adding Controller: " << lsi_name << " : " << proto;
+		//uint64_t id = switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
 		switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
 	}catch(...){
 		//Something went wrong
-                std::stringstream ss;
                 ss<<"Unable to add controller to lsi '"<<lsi_name<<"'";
                 rep.content = ss.str();
                 rep.status = http::server::reply::internal_server_error;
                 return;
 	}
 	
+	//Return assigned ID
+	//table.push_back(json_spirit::Pair("assigned id", id));
+	//rep.content = json_spirit::write(table, true);
 }
 
 } //namespace put

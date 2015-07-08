@@ -100,7 +100,7 @@ public:
 
 	virtual void rpc_disconnect_from_ctl(rofl::cctlid ctlid);
 
-	virtual void rpc_list_ctls(std::list<rofl::cctlid>);
+	virtual void rpc_list_ctls(std::list<rofl::cctlid>*);
 
 protected:
 	/*
