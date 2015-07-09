@@ -168,7 +168,7 @@ public:
 	/**
 	 * connect to controller
 	 */
-	static void rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
+	static uint64_t rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
 
 	/**
 	 * disconnect from from controller

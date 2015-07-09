@@ -96,7 +96,7 @@ public:
 	/**
 	 * Connecting and disconnecting from a controller entity
 	 */
-	virtual void rpc_connect_to_ctl(enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params);
+	virtual uint64_t rpc_connect_to_ctl(enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params);
 
 	virtual void rpc_disconnect_from_ctl(rofl::cctlid ctlid);
 

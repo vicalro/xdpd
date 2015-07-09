@@ -30,13 +30,14 @@ rofl_result_t openflow_switch::notify_port_status_changed(const switch_port_t* p
 /*
 * Connecting and disconnecting from a controller entity
 */
-void openflow_switch::rpc_connect_to_ctl(enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
+uint64_t openflow_switch::rpc_connect_to_ctl(enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
 	rofl::openflow::cofhello_elem_versionbitmap versionbitmap;
 	versionbitmap.add_ofp_version(version);
-	//rofl::crofctl* ctl = endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap).connect(rofl::cauxid(0), socket_type, socket_params);
-	endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap).connect(rofl::cauxid(0), socket_type, socket_params);
+	rofl::crofctl &ctl = endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap);
+	ctl.connect(rofl::cauxid(0), socket_type, socket_params);
+	//endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap).connect(rofl::cauxid(0), socket_type, socket_params);
 	
-	//return id;
+	return ctl.get_ctlid().get_ctlid();
 }
 
 void openflow_switch::rpc_disconnect_from_ctl(rofl::cctlid ctlid){

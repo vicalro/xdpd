@@ -456,7 +456,8 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	std::string proto, ip, port;
 	enum rofl::csocket::socket_type_t socket_type;
 	rofl::cparams socket_params;
-	//json_spirit::Object table;
+	json_spirit::Object table;
+	uint64_t assigned_id;
 	
 	//Perform security checks
         if(!authorised(req,rep)) return;
@@ -516,8 +517,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 
 	try{
 		ss<<"Adding Controller: " << lsi_name << " : " << proto;
-		//uint64_t id = switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
-		switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
+		assigned_id = switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
 	}catch(...){
 		//Something went wrong
                 ss<<"Unable to add controller to lsi '"<<lsi_name<<"'";
@@ -527,8 +527,8 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	}
 	
 	//Return assigned ID
-	//table.push_back(json_spirit::Pair("assigned id", id));
-	//rep.content = json_spirit::write(table, true);
+	table.push_back(json_spirit::Pair("assigned id", assigned_id));
+	rep.content = json_spirit::write(table, true);
 }
 
 } //namespace put

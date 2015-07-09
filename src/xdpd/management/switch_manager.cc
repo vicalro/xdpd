@@ -388,7 +388,7 @@ void switch_manager::get_switch_group_mods(uint64_t dpid, std::list<openflow_gro
 	of1x_destroy_stats_group_msg(group_table_stats);
 }
 
-void
+uint64_t
 switch_manager::rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
 
 	pthread_rwlock_wrlock(&switch_manager::rwlock);
@@ -400,8 +400,9 @@ switch_manager::rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_typ
 
 	//Get switch instance
 	openflow_switch* dp = switch_manager::switchs[dpid];
-	dp->rpc_connect_to_ctl(socket_type, socket_params);
+	uint64_t id = dp->rpc_connect_to_ctl(socket_type, socket_params);
 	pthread_rwlock_unlock(&switch_manager::rwlock);
+	return id;
 }
 
 
