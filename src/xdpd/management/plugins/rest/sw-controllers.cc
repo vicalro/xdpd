@@ -237,7 +237,6 @@ void lsi_groups(const http::server::request &req,
 }
 
 void list_ctls(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
-	fprintf(stderr,"LIST CONTROLLERS CALLED\n");
 	std::stringstream ss;
 	std::string lsi_name;
 	uint64_t dpid;
@@ -249,8 +248,6 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 
 	lsi_name = std::string(grps[1]);
 
-	fprintf(stderr,"listing controllers from lsi %s\n", lsi_name.c_str());
-
 	// Get dpid
 	try{
 		dpid = switch_manager::get_switch_dpid(lsi_name);
@@ -261,13 +258,10 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 		return;
 	}
 	
-	fprintf(stderr, "dpid %lu\n", dpid);
-
 	try{
 		ss<<"Listing controllers from: " << lsi_name;
 		switch_manager::rpc_list_ctls(dpid, &list);
 	}catch(...){
-		fprintf(stderr, "ERROR switch_manager::rpc_list_ctls\n");
 		ss<<"Unable to get list of ctls from lsi '"<<lsi_name<<"'";
 		rep.content = ss.str();
 		rep.status = http::server::reply::internal_server_error;
@@ -277,7 +271,6 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	//Return data
 	std::list<std::string> list_str;
 	for(std::list<rofl::cctlid>::iterator it = list.begin(); it != list.end(); it++){
-		fprintf(stderr,"found ctl-ID %lu\n", it->get_ctlid());
 		std::stringstream ss_tmp;
 		ss_tmp << it->get_ctlid();
 		list_str.push_back(ss_tmp.str());
@@ -289,18 +282,18 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 }
 
 void show_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
-	fprintf(stderr,"SHOW CONTROLLER CALLED\n");
 	std::stringstream ss;
-	std::string lsi_name, ctl_id;
-	uint64_t dpid;
+	std::string lsi_name; //, ctl_id;
+	uint64_t dpid, ctl_id;
+	controller_snapshot ctl_info;
+	json_spirit::Object wrap, list;
 	
 	//Perform security checks
         if(!authorised(req,rep)) return;
 
 	lsi_name = std::string(grps[1]);
-	ctl_id = std::string(grps[2]);
+	ctl_id = atoi(std::string(grps[2]).c_str());
 
-	fprintf(stderr,"showing controller from lsi %s, id %s\n", lsi_name.c_str(), ctl_id.c_str());
 
 	// Get dpid
 	try{
@@ -312,16 +305,34 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 		return;
 	}
 	
-	fprintf(stderr, "dpid %lu\n", dpid);
-#if 0
 	try{
-		ss<<"Listing controller info: " << lsi_name;
-		switch_manager::rpc_show_ctl(dpid, id, info);
+		ss<<"Showing Controller info: " << lsi_name;
+		switch_manager::get_controller_info(dpid, ctl_id, ctl_info);
 	}catch(...){
-		
+		ss<<"Unable to get Controller info for lsi " << lsi_name;
+		rep.content = ss.str();
+		rep.status = http::server::reply::bad_request;
+		return;
+	}	
+
+	std::list<std::string> conn_str;
+	std::list<controller_conn_snapshot>::const_iterator it;
+	for(it=ctl_info.conn_list.begin(); it != ctl_info.conn_list.end(); ++it){
+		std::stringstream ss;
+		ss << *it;
+		conn_str.push_back(ss.str());
 	}
+
+	std::stringstream ctl_ss;
+	ctl_ss << ctl_info;
+
+	list.push_back(json_spirit::Pair("info", ctl_ss.str()));
+	json_spirit::Value conns_(conn_str.begin(), conn_str.end());
+	list.push_back(json_spirit::Pair("Connections", conns_));
+
 	//Return data
-#endif
+	wrap.push_back(json_spirit::Pair("Controller", list));
+	rep.content = json_spirit::write(wrap, true);
 }
 
 } //namespace get

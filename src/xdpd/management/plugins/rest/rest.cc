@@ -104,8 +104,8 @@ static void srvthread (){
 		//
 		handler.register_put_path("/mgmt/add/controller/(\\w+)", boost::bind(controllers::put::add_ctl, _1, _2, _3));
 		handler.register_delete_path("/mgmt/remove/controller/(\\w+)/(\\w+)", boost::bind(controllers::delete_::rem_ctl, _1, _2, _3));
-		handler.register_get_path("/info/lsi/(\\w+)/ctls", boost::bind(controllers::get::list_ctls, _1, _2, _3));
-		handler.register_get_path("/info/lsi/(\\w+)/ctl/(\\w+)", boost::bind(controllers::get::show_ctl, _1, _2, _3));
+		handler.register_get_path("/info/lsi/(\\w+)/controllers", boost::bind(controllers::get::list_ctls, _1, _2, _3));
+		handler.register_get_path("/info/lsi/(\\w+)/controller/(\\w+)", boost::bind(controllers::get::show_ctl, _1, _2, _3));
 
 		//
 		//DELETE

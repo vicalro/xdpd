@@ -22,6 +22,9 @@
 
 namespace xdpd {
 
+// Fwd declaration for controller snapshot
+class controller_snapshot;
+
 /**
 * @brief Version-agnostic abstraction of a complete
 * (logical) OpenFlow switch.
@@ -100,7 +103,12 @@ public:
 
 	virtual void rpc_disconnect_from_ctl(rofl::cctlid ctlid);
 
+	/**
+	 * Getting information about controllers
+	 */
 	virtual void rpc_list_ctls(std::list<rofl::cctlid>*);
+
+	virtual void get_controller_info(uint64_t ctl_id, xdpd::controller_snapshot& ctl_info);
 
 protected:
 	/*

@@ -439,6 +439,21 @@ switch_manager::rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
 
 }
 
+void switch_manager::get_controller_info(uint64_t dpid, uint64_t ctl_id, controller_snapshot& ctl_info){
+
+	pthread_rwlock_wrlock(&switch_manager::rwlock);
+	
+	if (switch_manager::switchs.find(dpid) == switch_manager::switchs.end()){
+		pthread_rwlock_unlock(&switch_manager::rwlock);
+		throw eOfSmDoesNotExist();
+	}
+
+	//Get switch instance
+	openflow_switch* dp = switch_manager::switchs[dpid];
+	dp->get_controller_info(ctl_id, ctl_info);
+
+	pthread_rwlock_unlock(&switch_manager::rwlock);
+}
 
 //
 // Other configuration parameters

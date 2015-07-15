@@ -34,6 +34,7 @@
 #include "snapshots/switch_snapshot.h"
 #include "snapshots/flow_entry_snapshot.h"
 #include "snapshots/group_mod_snapshot.h"
+#include "snapshots/controller_snapshot.h"
 
 /**
 * @file switch_manager.h
@@ -166,19 +167,24 @@ public:
 	//
 
 	/**
-	 * connect to controller
+	 * Connect to controller
 	 */
 	static uint64_t rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
 
 	/**
-	 * disconnect from from controller
+	 * Disconnect from from controller
 	 */
 	static void rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid);
 
 	/**
-	 * list the available controllers ids
+	 * List the available controllers ids
 	 */
 	static void rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid> *list);
+
+	/**
+	 * Get detailed information of a specific controller
+	 */
+	static void get_controller_info(uint64_t dpid, uint64_t ctl_id, controller_snapshot& ctl_info);
 
 	//
 	// Other configuration parameters
