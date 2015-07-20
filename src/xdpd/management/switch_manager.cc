@@ -389,7 +389,7 @@ void switch_manager::get_switch_group_mods(uint64_t dpid, std::list<openflow_gro
 }
 
 uint64_t
-switch_manager::rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
+switch_manager::connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, cparams const& socket_params){
 
 	pthread_rwlock_wrlock(&switch_manager::rwlock);
 	
@@ -408,7 +408,7 @@ switch_manager::rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_typ
 
 
 void
-switch_manager::rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid){
+switch_manager::disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid){
 
 	pthread_rwlock_wrlock(&switch_manager::rwlock);
 	
@@ -424,8 +424,8 @@ switch_manager::rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid){
 }
 
 void
-switch_manager::rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
-	pthread_rwlock_wrlock(&switch_manager::rwlock);
+switch_manager::list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
+	pthread_rwlock_rdlock(&switch_manager::rwlock);
 	
 	if (switch_manager::switchs.find(dpid) == switch_manager::switchs.end()){
 		pthread_rwlock_unlock(&switch_manager::rwlock);
@@ -441,7 +441,7 @@ switch_manager::rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
 
 void switch_manager::get_controller_info(uint64_t dpid, uint64_t ctl_id, controller_snapshot& ctl_info){
 
-	pthread_rwlock_wrlock(&switch_manager::rwlock);
+	pthread_rwlock_rdlock(&switch_manager::rwlock);
 	
 	if (switch_manager::switchs.find(dpid) == switch_manager::switchs.end()){
 		pthread_rwlock_unlock(&switch_manager::rwlock);

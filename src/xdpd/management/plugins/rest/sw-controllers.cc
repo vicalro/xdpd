@@ -260,7 +260,7 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	
 	try{
 		ss<<"Listing controllers from: " << lsi_name;
-		switch_manager::rpc_list_ctls(dpid, &list);
+		switch_manager::list_ctls(dpid, &list);
 	}catch(...){
 		ss<<"Unable to get list of ctls from lsi '"<<lsi_name<<"'";
 		rep.content = ss.str();
@@ -532,7 +532,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 
 	try{
 		ss<<"Adding Controller: " << lsi_name << " : " << proto;
-		assigned_id = switch_manager::rpc_connect_to_ctl(dpid, socket_type, socket_params);
+		assigned_id = switch_manager::connect_to_ctl(dpid, socket_type, socket_params);
 	}catch(...){
 		//Something went wrong
                 ss<<"Unable to add controller to lsi '"<<lsi_name<<"'";
@@ -615,7 +615,7 @@ void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::
 
 	try{
 		ss<<"Removing Controller: " << lsi_name << " : " << ctlid_str;
-		switch_manager::rpc_disconnect_from_ctl(dpid, ctlid);
+		switch_manager::disconnect_from_ctl(dpid, ctlid);
 	}catch(...){
 		//Something went wrong
                 std::stringstream ss;

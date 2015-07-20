@@ -169,17 +169,17 @@ public:
 	/**
 	 * Connect to controller
 	 */
-	static uint64_t rpc_connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
+	static uint64_t connect_to_ctl(uint64_t dpid, enum rofl::csocket::socket_type_t socket_type, rofl::cparams const& socket_params);
 
 	/**
 	 * Disconnect from from controller
 	 */
-	static void rpc_disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid);
+	static void disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid);
 
 	/**
 	 * List the available controllers ids
 	 */
-	static void rpc_list_ctls(uint64_t dpid, std::list<rofl::cctlid> *list);
+	static void list_ctls(uint64_t dpid, std::list<rofl::cctlid> *list);
 
 	/**
 	 * Get detailed information of a specific controller
