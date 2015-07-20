@@ -277,7 +277,7 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	}
 
 	json_spirit::Value ids_(list_str.begin(), list_str.end());
-	table.push_back(json_spirit::Pair("ids", ids_));
+	table.push_back(json_spirit::Pair("controller-ids", ids_));
 	rep.content = json_spirit::write(table, true);
 }
 
