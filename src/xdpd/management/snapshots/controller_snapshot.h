@@ -47,25 +47,23 @@ public:
 	*/
 	uint64_t port;
 
+	std::string get_proto_type_str(void) const {
+		switch (this->proto_type){
+			case rofl::csocket::SOCKET_TYPE_UNKNOWN:
+                                return "unkown";
+                        case rofl::csocket::SOCKET_TYPE_PLAIN:
+                                return "plain";
+                        case rofl::csocket::SOCKET_TYPE_OPENSSL:
+                                return "ssl";
+                        default:
+				assert(0);
+				return "type error";
+		}
+	}
  	//Dumping operator
 	friend std::ostream& operator<<(std::ostream& os, const controller_conn_snapshot& c){
 		os << "id: " << c.id << ", type: ";
-		switch (c.proto_type){
-			case rofl::csocket::SOCKET_TYPE_UNKNOWN:
-                                os << "Unkown";
-                                break;
-                        case rofl::csocket::SOCKET_TYPE_PLAIN:
-                                os << "Plain";
-                                break;
-                        case rofl::csocket::SOCKET_TYPE_OPENSSL:
-                                os << "SSL";
-                                break;
-                        default:
-				assert(0);
-				os << "type error";
-                                break;
-
-		}
+		os << c.get_proto_type_str();
 		os << ", IP: " << c.ip << ", port: " << c.port;
 		return os;
 	}
@@ -102,23 +100,26 @@ public:
 	*/
 	std::list<controller_conn_snapshot> conn_list;
 
+	std::string get_status_str(void) const {
+		if (this->connected)
+			return "established";
+		else
+			return "not-established";
+	}
+
+	std::string get_role_str(void) const {
+		if (this->role == CONTROLLER_MODE_MASTER)
+			return "master";
+		else
+			return "slave";
+	}
+
  	//Dumping operator
 	friend std::ostream& operator<<(std::ostream& os, const controller_snapshot& c)
 	{
 		//TODO: Improve output 
-		os << "{ id: " << c.id << ", Channel status: ";
-		if (c.connected){
-			os << " Established";
-		}else{
-			os << " Not established";
-		}
-
-		os << ", Mode: ";
-		if (c.role == CONTROLLER_MODE_MASTER){
-			os << "Master";
-		}else{
-			os << "Slave";
-		}
+		os << "{ id: " << c.id << ", Channel status: " << c.get_status_str();
+		os << ", Mode: " << c.get_role_str();
 		os << "}";
 		return os;
 	}

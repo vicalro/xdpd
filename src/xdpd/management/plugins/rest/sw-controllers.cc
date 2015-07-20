@@ -286,7 +286,7 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 	std::string lsi_name; //, ctl_id;
 	uint64_t dpid, ctl_id;
 	controller_snapshot ctl_info;
-	json_spirit::Object wrap, list;
+	json_spirit::Object j_wrap, j_ctl, j_list;
 	
 	//Perform security checks
         if(!authorised(req,rep)) return;
@@ -315,24 +315,28 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 		return;
 	}	
 
-	std::list<std::string> conn_str;
+	j_ctl.push_back(json_spirit::Pair("id", ctl_info.id));
+	j_ctl.push_back(json_spirit::Pair("channel-status", ctl_info.get_status_str()));
+	j_ctl.push_back(json_spirit::Pair("mode", ctl_info.get_role_str()));
+
 	std::list<controller_conn_snapshot>::const_iterator it;
 	for(it=ctl_info.conn_list.begin(); it != ctl_info.conn_list.end(); ++it){
+		json_spirit::Object j_conn;
+		j_conn.push_back(json_spirit::Pair("protocol-type", it->get_proto_type_str()));
+		j_conn.push_back(json_spirit::Pair("ip", it->ip));
+		j_conn.push_back(json_spirit::Pair("port", it->port));
+
 		std::stringstream ss;
-		ss << *it;
-		conn_str.push_back(ss.str());
+		ss << it->id;
+		j_list.push_back(json_spirit::Pair(ss.str(), j_conn));
+		
 	}
 
-	std::stringstream ctl_ss;
-	ctl_ss << ctl_info;
-
-	list.push_back(json_spirit::Pair("info", ctl_ss.str()));
-	json_spirit::Value conns_(conn_str.begin(), conn_str.end());
-	list.push_back(json_spirit::Pair("Connections", conns_));
+	j_ctl.push_back(json_spirit::Pair("connections", j_list));
 
 	//Return data
-	wrap.push_back(json_spirit::Pair("Controller", list));
-	rep.content = json_spirit::write(wrap, true);
+	j_wrap.push_back(json_spirit::Pair("Controller", j_ctl));
+	rep.content = json_spirit::write(j_wrap, true);
 }
 
 } //namespace get
