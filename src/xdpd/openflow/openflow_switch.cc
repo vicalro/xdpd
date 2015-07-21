@@ -36,19 +36,13 @@ uint64_t openflow_switch::rpc_connect_to_ctl(enum rofl::csocket::socket_type_t s
 	versionbitmap.add_ofp_version(version);
 	rofl::crofctl &ctl = endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap);
 	ctl.connect(rofl::cauxid(0), socket_type, socket_params);
-	//endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap).connect(rofl::cauxid(0), socket_type, socket_params);
 	
 	return ctl.get_ctlid().get_ctlid();
 }
 
 void openflow_switch::rpc_disconnect_from_ctl(rofl::cctlid ctlid){
-	// TODO check for a valid ID
-	//if (endpoint->has_ctl(ctlid)){
+	//NOTE need to check for existance? if (endpoint->has_ctl(ctlid))
 		endpoint->drop_ctl(ctlid);
-	//}
-	//else {
-	//	throw eOfSmNotFound;
-	//}
 }
 
 void openflow_switch::rpc_list_ctls(std::list<rofl::cctlid> *ctls_list){
@@ -64,10 +58,20 @@ void openflow_switch::get_controller_info(uint64_t ctl_id, controller_snapshot& 
 	// Get info for snapshot (Role, Status, SSL, IP, port)
 	ctl_info.id = ctl_id;
 	// Role Master / Slave
-	if (ctl.is_slave()){
-		ctl_info.role = controller_snapshot::CONTROLLER_MODE_SLAVE;
-	} else {
-		ctl_info.role = controller_snapshot::CONTROLLER_MODE_MASTER;
+	switch (ctl.get_role().get_role()){
+		// WARNING the openflow version specific types should be abstracted from the API
+		case rofl::openflow12::OFPCR_ROLE_EQUAL:
+			ctl_info.role = controller_snapshot::CONTROLLER_MODE_EQUAL;
+			break;
+		case rofl::openflow12::OFPCR_ROLE_SLAVE:
+			ctl_info.role = controller_snapshot::CONTROLLER_MODE_SLAVE;
+			break;
+		case rofl::openflow12::OFPCR_ROLE_MASTER:
+			ctl_info.role = controller_snapshot::CONTROLLER_MODE_MASTER;
+			break;
+		default:
+			//TODO error
+			break;
 	}
 
 	// Status

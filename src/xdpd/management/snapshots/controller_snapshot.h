@@ -5,13 +5,6 @@
 #ifndef CONTROLLER_SNAPSHOT_H
 #define CONTROLLER_SNAPSHOT_H 
 
-//#include <iostream> 
-//#include <string> 
-//#include <list> 
-//#include <rofl_datapath.h>
-//#include <rofl/common/caddress.h>
-//#include <rofl/datapath/pipeline/switch_port.h>
-
 /**
 * @file ctl_snapshot.h 
 * @author Victor Alvarez<victor.alvarez (at) bisdn.de>
@@ -81,6 +74,7 @@ public:
 
 	// Controller Mode
 	typedef enum {
+		CONTROLLER_MODE_EQUAL,
 		CONTROLLER_MODE_MASTER,
 		CONTROLLER_MODE_SLAVE
 	}controller_role_t;
@@ -108,10 +102,16 @@ public:
 	}
 
 	std::string get_role_str(void) const {
-		if (this->role == CONTROLLER_MODE_MASTER)
+		if (this->role == CONTROLLER_MODE_EQUAL)
+			return "equal";
+		else if (this->role == CONTROLLER_MODE_MASTER)
 			return "master";
-		else
+		else if (this->role == CONTROLLER_MODE_SLAVE)
 			return "slave";
+		else{
+			assert(0);
+			return "error";
+		}
 	}
 
  	//Dumping operator
