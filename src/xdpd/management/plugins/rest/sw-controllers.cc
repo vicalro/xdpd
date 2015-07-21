@@ -517,13 +517,11 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	}
 
 
-	//fprintf(stderr,"found proto: %s\n ip %s\n port %s\n", proto.c_str(), ip.c_str(), port.c_str());
 	//TODO Check parameters received (proto, ip & port)
 	if ( proto == "tcp" ){
 		socket_type = rofl::csocket::SOCKET_TYPE_PLAIN;
 	} else {
-		//Other types not supported
-		// TODO add SOCKET_TYPE_OPENSSL
+		// TODO Other types not yet  supported (SOCKET_TYPE_OPENSSL)
 		return;
 	}
 	socket_params = rofl::csocket::get_default_params(socket_type);
