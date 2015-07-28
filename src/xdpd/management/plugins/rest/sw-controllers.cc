@@ -237,7 +237,6 @@ void lsi_groups(const http::server::request &req,
 }
 
 void list_ctls(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
-	std::stringstream ss;
 	std::string lsi_name;
 	uint64_t dpid;
 	std::list<rofl::cctlid> list;
@@ -259,7 +258,6 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	}
 	dpid = switch_manager::get_switch_dpid(lsi_name);
 
-	ss<<"Listing controllers from: " << lsi_name;
 	try{
 		switch_manager::list_ctls(dpid, &list);
 	}catch(...){
@@ -280,7 +278,6 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 }
 
 void show_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
-	std::stringstream ss;
 	std::string lsi_name; //, ctl_id;
 	uint64_t dpid, ctl_id;
 	controller_snapshot ctl_info;
@@ -305,7 +302,6 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 
 	dpid = switch_manager::get_switch_dpid(lsi_name);
 
-	ss<<"Showing Controller info: " << lsi_name;
 	try{
 		switch_manager::get_controller_info(dpid, ctl_id, ctl_info);
 	}catch(...){
@@ -464,7 +460,6 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	//call switch_manager to add a new controller to the LSI
 	// get IP & port from the req parameter (json?)
 	// check IP & port (if there is already a controller there, send error message)
-	std::stringstream ss;
 	std::string proto, ip, port;
 	enum rofl::csocket::socket_type_t socket_type;
 	rofl::cparams socket_params;
@@ -506,7 +501,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 		port = json_spirit::find_value(obj, "port").get_str();
 
 	}catch(...){
-		//Something went wrong
+		std::stringstream ss;
 		ss<<"Unable to parse arguments for add controller";
 		rep.content = ss.str();
 		rep.status = http::server::reply::bad_request;
@@ -529,7 +524,6 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_HOSTNAME) = ip;
 	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_PORT) = port;
 
-	ss<<"Adding Controller: " << lsi_name << " : " << proto;
 	try{
 		assigned_id = switch_manager::connect_to_ctl(dpid, socket_type, socket_params);
 	}catch(...){
@@ -580,7 +574,6 @@ void destroy_switch(const http::server::request &req, http::server::reply &rep, 
 
 void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::cmatch& grps){
 
-	std::stringstream ss;
 	std::string lsi_name;
 	std::string ctlid_str;
 	uint64_t dpid, ctl_id;
@@ -608,7 +601,6 @@ void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	ctl_id = atoi(ctlid_str.c_str());
 	rofl::cctlid ctlid(ctl_id);
 
-	ss<<"Removing Controller: " << lsi_name << " : " << ctlid_str;
 	try{
 		switch_manager::disconnect_from_ctl(dpid, ctlid);
 	}catch(...){
