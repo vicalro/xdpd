@@ -82,6 +82,10 @@ static void srvthread (){
 		handler.register_get_path("/info/lsi/(\\w+)/table/([0-9]+)/flows", boost::bind(controllers::get::lsi_table_flows, _1, _2, _3));
 		handler.register_get_path("/info/lsi/(\\w+)/group-table", boost::bind(controllers::get::lsi_groups, _1, _2, _3));
 
+		//Controllers
+		handler.register_get_path("/info/lsi/(\\w+)/controllers", boost::bind(controllers::get::list_ctls, _1, _2, _3));
+		handler.register_get_path("/info/lsi/(\\w+)/controller/(\\w+)", boost::bind(controllers::get::show_ctl, _1, _2, _3));
+
 		//
 		// POST
 		//
@@ -99,18 +103,16 @@ static void srvthread (){
 		handler.register_post_path("/mgmt/create/lsi", boost::bind(controllers::put::create_lsi, _1, _2, _3));
 		handler.register_put_path("/mgmt/create/vlink/(\\w+)/(\\w+)", boost::bind(controllers::put::create_vlink, _1, _2, _3));
 
-		//
-		// CONTROLLERS
-		//
+		// Controllers
 		handler.register_put_path("/mgmt/add/controller/(\\w+)", boost::bind(controllers::put::add_ctl, _1, _2, _3));
-		handler.register_delete_path("/mgmt/remove/controller/(\\w+)/(\\w+)", boost::bind(controllers::delete_::rem_ctl, _1, _2, _3));
-		handler.register_get_path("/info/lsi/(\\w+)/controllers", boost::bind(controllers::get::list_ctls, _1, _2, _3));
-		handler.register_get_path("/info/lsi/(\\w+)/controller/(\\w+)", boost::bind(controllers::get::show_ctl, _1, _2, _3));
 
 		//
 		//DELETE
 		//
 		handler.register_delete_path("/mgmt/destroy/lsi/(\\w+)", boost::bind(controllers::delete_::destroy_switch, _1, _2, _3));
+
+		// Controllers
+		handler.register_delete_path("/mgmt/remove/controller/(\\w+)/(\\w+)", boost::bind(controllers::delete_::rem_ctl, _1, _2, _3));
 
 		//Recover host and port
 		parse_bind_addr(host, port);
