@@ -242,7 +242,7 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	uint64_t dpid;
 	std::list<rofl::cctlid> list;
 	json_spirit::Object table;
-	
+
 	//Perform security checks
         if(!authorised(req,rep)) return;
 
@@ -258,7 +258,7 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 		return;
 	}
 	dpid = switch_manager::get_switch_dpid(lsi_name);
-	
+
 	ss<<"Listing controllers from: " << lsi_name;
 	try{
 		switch_manager::list_ctls(dpid, &list);
@@ -285,7 +285,7 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 	uint64_t dpid, ctl_id;
 	controller_snapshot ctl_info;
 	json_spirit::Object j_wrap, j_ctl, j_list;
-	
+
 	//Perform security checks
         if(!authorised(req,rep)) return;
 
@@ -310,7 +310,7 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 		switch_manager::get_controller_info(dpid, ctl_id, ctl_info);
 	}catch(...){
 		throw "Unable to get Controller info for lsi";
-	}	
+	}
 
 	j_ctl.push_back(json_spirit::Pair("id", ctl_info.id));
 	j_ctl.push_back(json_spirit::Pair("channel-status", ctl_info.get_status_str()));
@@ -326,7 +326,7 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 		std::stringstream ss;
 		ss << it->id;
 		j_list.push_back(json_spirit::Pair(ss.str(), j_conn));
-		
+
 	}
 
 	j_ctl.push_back(json_spirit::Pair("connections", j_list));
@@ -470,7 +470,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	rofl::cparams socket_params;
 	json_spirit::Object table;
 	uint64_t assigned_id;
-	
+
 	//Perform security checks
         if(!authorised(req,rep)) return;
 
@@ -486,9 +486,9 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
                 return;
         }
 
-	// Get dpid TODO check for failure
+	// Get dpid check for failure
 	uint64_t dpid = switch_manager::get_switch_dpid(lsi_name);
-	
+
 	// Parse data (protocol, IP & port)
 	try{
 		//Parse the input
@@ -535,7 +535,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	}catch(...){
                 throw "Unable to add controller to lsi";
 	}
-	
+
 	//Return assigned ID
 	table.push_back(json_spirit::Pair("assigned id", assigned_id));
 	rep.content = json_spirit::write(table, true);
@@ -586,7 +586,7 @@ void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	uint64_t dpid, ctl_id;
 
 	//Perform security checks
-	if(!authorised(req,rep)) return;	
+	if(!authorised(req,rep)) return;
 
 	lsi_name = std::string(grps[1]);
 	ctlid_str = std::string(grps[2]);

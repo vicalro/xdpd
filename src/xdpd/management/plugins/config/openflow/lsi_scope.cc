@@ -294,7 +294,7 @@ void lsi_scope::post_validate(libconfig::Setting& setting, bool dry_run){
 		
 		//Connect(1..N-1)
 		for(std::vector<lsi_connection>::iterator it = (conns.begin()+1); it != conns.end(); ++it) {
-			switch_manager::connect_to_ctl(dpid, it->type, it->params); 
+			switch_manager::connect_to_ctl(dpid, it->type, it->params);
 		}	
 	}
 }

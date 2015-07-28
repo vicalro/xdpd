@@ -36,7 +36,7 @@ uint64_t openflow_switch::rpc_connect_to_ctl(enum rofl::csocket::socket_type_t s
 	versionbitmap.add_ofp_version(version);
 	rofl::crofctl &ctl = endpoint->add_ctl(endpoint->get_idle_ctlid(), versionbitmap);
 	ctl.connect(rofl::cauxid(0), socket_type, socket_params);
-	
+
 	return ctl.get_ctlid().get_ctlid();
 }
 
@@ -82,7 +82,6 @@ void openflow_switch::get_controller_info(uint64_t ctl_id, controller_snapshot& 
 	for(std::list<rofl::cauxid>::iterator it = conn_list.begin(); it != conn_list.end(); it++){
 
 		controller_conn_snapshot conn;
-		
 		conn.id = it->get_id();
 
 		// Connection type plain/ssl
@@ -116,6 +115,3 @@ void openflow_switch::get_controller_info(uint64_t ctl_id, controller_snapshot& 
 
 	}
 }
-
-
-

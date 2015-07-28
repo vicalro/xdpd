@@ -3,10 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef CONTROLLER_SNAPSHOT_H
-#define CONTROLLER_SNAPSHOT_H 
+#define CONTROLLER_SNAPSHOT_H
 
 /**
-* @file ctl_snapshot.h 
+* @file ctl_snapshot.h
 * @author Victor Alvarez<victor.alvarez (at) bisdn.de>
 *
 * @brief C++ Controller snapshot
@@ -29,7 +29,7 @@ public:
 	* Protocol used: Plain/SSL
 	*/
 	protocol_type_t proto_type;
-	
+
 	/**
 	* IP
 	*/
@@ -53,7 +53,7 @@ public:
 				return "type error";
 		}
 	}
- 	//Dumping operator
+	//Dumping operator
 	friend std::ostream& operator<<(std::ostream& os, const controller_conn_snapshot& c){
 		os << "id: " << c.id << ", type: ";
 		os << c.get_proto_type_str();
@@ -63,12 +63,12 @@ public:
 };
 
 /**
-* @brief C++ controller snapshot 
+* @brief C++ controller snapshot
 * @ingroup cmm_mgmt
 */
 class controller_snapshot {
 
-public:	
+public:
 
 	uint64_t id;
 
@@ -114,10 +114,9 @@ public:
 		}
 	}
 
- 	//Dumping operator
+	//Dumping operator
 	friend std::ostream& operator<<(std::ostream& os, const controller_snapshot& c)
 	{
-		//TODO: Improve output 
 		os << "{ id: " << c.id << ", Channel status: " << c.get_status_str();
 		os << ", Mode: " << c.get_role_str();
 		os << "}";

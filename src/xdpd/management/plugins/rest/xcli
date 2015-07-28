@@ -184,7 +184,7 @@ def parse_add_controller(params):
 	obj = {}
 	ctl = obj["ctl"] = {}
 	splitted_vec = params[0].split(':')
-	
+
 	# Check number of parameters
 	if len(splitted_vec) != 3:
 		raise Exception("Wrong number of parameters. Use protocol:ip:port\nExample tcp:192.0.0.55:6633") 
@@ -193,13 +193,13 @@ def parse_add_controller(params):
 		ctl["proto"] = "tcp"
 	elif splitted_vec[0] == "tcp+tls":
 		raise Exception("TLS not yet supported")
-	
+
 	if splitted_vec[1] == "":
 		#TODO check valid ip (dots, ping?)
 		raise Exception("Invalid IP")
 	else:
 		ctl["ip"] = splitted_vec[1]
-	
+
 	if splitted_vec[2] == "":
 		raise Exception("Error: Invalid port")
 	else:
@@ -348,7 +348,7 @@ def execute(socket, command, req_confirm=False):
 				data = parse_add_controller(stripped[4:])
 				try: 
 					return rest(socket, compose_url(stripped[:4]), data, "PUT")
-				except Exception as e:	
+				except Exception as e:
 					return "error: "+str(e)
 			else:
 				return "Usage: exec add controller <lsi_name> <mode:ip:port>"

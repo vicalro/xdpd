@@ -426,7 +426,7 @@ switch_manager::disconnect_from_ctl(uint64_t dpid, rofl::cctlid ctlid){
 void
 switch_manager::list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
 	pthread_rwlock_rdlock(&switch_manager::rwlock);
-	
+
 	if (switch_manager::switchs.find(dpid) == switch_manager::switchs.end()){
 		pthread_rwlock_unlock(&switch_manager::rwlock);
 		throw eOfSmDoesNotExist();
@@ -442,7 +442,7 @@ switch_manager::list_ctls(uint64_t dpid, std::list<rofl::cctlid>* list){
 void switch_manager::get_controller_info(uint64_t dpid, uint64_t ctl_id, controller_snapshot& ctl_info){
 
 	pthread_rwlock_rdlock(&switch_manager::rwlock);
-	
+
 	if (switch_manager::switchs.find(dpid) == switch_manager::switchs.end()){
 		pthread_rwlock_unlock(&switch_manager::rwlock);
 		throw eOfSmDoesNotExist();
