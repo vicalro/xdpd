@@ -249,23 +249,21 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	lsi_name = std::string(grps[1]);
 
 	// Get dpid
-	try{
-		dpid = switch_manager::get_switch_dpid(lsi_name);
-	}catch(...){
-		ss<<"Unable to find a dpid for lsi " << lsi_name;
+	if(!switch_manager::exists_by_name(lsi_name)){
+		//Throw 404
+		std::stringstream ss;
+		ss<<"Invalid lsi '"<<lsi_name<<"'";
 		rep.content = ss.str();
-		rep.status = http::server::reply::bad_request;
+		rep.status = http::server::reply::not_found;
 		return;
 	}
+	dpid = switch_manager::get_switch_dpid(lsi_name);
 	
+	ss<<"Listing controllers from: " << lsi_name;
 	try{
-		ss<<"Listing controllers from: " << lsi_name;
 		switch_manager::list_ctls(dpid, &list);
 	}catch(...){
-		ss<<"Unable to get list of ctls from lsi '"<<lsi_name<<"'";
-		rep.content = ss.str();
-		rep.status = http::server::reply::internal_server_error;
-		return;
+		throw "Unable to get list of ctls from lsi";
 	}
 
 	//Return data
@@ -296,23 +294,22 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 
 
 	// Get dpid
-	try{
-		dpid = switch_manager::get_switch_dpid(lsi_name);
-	}catch(...){
-		ss<<"Unable to find a dpid for lsi " << lsi_name;
+	if(!switch_manager::exists_by_name(lsi_name)){
+		//Throw 404
+		std::stringstream ss;
+		ss<<"Invalid lsi '"<<lsi_name<<"'";
 		rep.content = ss.str();
-		rep.status = http::server::reply::bad_request;
+		rep.status = http::server::reply::not_found;
 		return;
 	}
-	
+
+	dpid = switch_manager::get_switch_dpid(lsi_name);
+
+	ss<<"Showing Controller info: " << lsi_name;
 	try{
-		ss<<"Showing Controller info: " << lsi_name;
 		switch_manager::get_controller_info(dpid, ctl_id, ctl_info);
 	}catch(...){
-		ss<<"Unable to get Controller info for lsi " << lsi_name;
-		rep.content = ss.str();
-		rep.status = http::server::reply::bad_request;
-		return;
+		throw "Unable to get Controller info for lsi";
 	}	
 
 	j_ctl.push_back(json_spirit::Pair("id", ctl_info.id));
@@ -522,21 +519,21 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 		socket_type = rofl::csocket::SOCKET_TYPE_PLAIN;
 	} else {
 		// TODO Other types not yet  supported (SOCKET_TYPE_OPENSSL)
+		std::stringstream ss;
+		ss<<"Invalid protocol '"<<lsi_name<<"'";
+		rep.content = ss.str();
+		rep.status = http::server::reply::bad_request;
 		return;
 	}
 	socket_params = rofl::csocket::get_default_params(socket_type);
 	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_HOSTNAME) = ip;
 	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_PORT) = port;
 
+	ss<<"Adding Controller: " << lsi_name << " : " << proto;
 	try{
-		ss<<"Adding Controller: " << lsi_name << " : " << proto;
 		assigned_id = switch_manager::connect_to_ctl(dpid, socket_type, socket_params);
 	}catch(...){
-		//Something went wrong
-                ss<<"Unable to add controller to lsi '"<<lsi_name<<"'";
-                rep.content = ss.str();
-                rep.status = http::server::reply::internal_server_error;
-                return;
+                throw "Unable to add controller to lsi";
 	}
 	
 	//Return assigned ID
@@ -611,16 +608,11 @@ void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	ctl_id = atoi(ctlid_str.c_str());
 	rofl::cctlid ctlid(ctl_id);
 
+	ss<<"Removing Controller: " << lsi_name << " : " << ctlid_str;
 	try{
-		ss<<"Removing Controller: " << lsi_name << " : " << ctlid_str;
 		switch_manager::disconnect_from_ctl(dpid, ctlid);
 	}catch(...){
-		//Something went wrong
-                std::stringstream ss;
-                ss<<"Unable to remove controller from lsi '"<<lsi_name<<"'";
-                rep.content = ss.str();
-                rep.status = http::server::reply::internal_server_error;
-                return;
+                throw "Unable to remove controller from lsi";
 	}
 }
 
