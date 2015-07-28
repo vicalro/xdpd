@@ -26,7 +26,7 @@ AC_SUBST(LIBTOOL)dnl
 
 
 #Default flags
-CFLAGS="-Werror -Wall $CFLAGS"
+CFLAGS="-fgnu89-inline -Werror -Wall $CFLAGS"
 CXXFLAGS="-Werror -Wall $CXXFLAGS"
 LDFLAGS="-Wl,--as-needed -Wl,-export-dynamic"
 
@@ -70,6 +70,9 @@ m4_include([config/profiling.m4])
 
 #Experimental code
 m4_include([config/experimental.m4])
+
+#Pipeline optimizations
+m4_include([config/pipeline_opts.m4])
 
 #External libraries
 m4_include([config/libs.m4])
