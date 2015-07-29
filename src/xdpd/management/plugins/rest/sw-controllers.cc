@@ -242,9 +242,6 @@ void list_ctls(const http::server::request &req, http::server::reply &rep, boost
 	std::list<rofl::cctlid> list;
 	json_spirit::Object table;
 
-	//Perform security checks
-        if(!authorised(req,rep)) return;
-
 	lsi_name = std::string(grps[1]);
 
 	// Get dpid
@@ -282,9 +279,6 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 	uint64_t dpid, ctl_id;
 	controller_snapshot ctl_info;
 	json_spirit::Object j_wrap, j_ctl, j_list;
-
-	//Perform security checks
-        if(!authorised(req,rep)) return;
 
 	lsi_name = std::string(grps[1]);
 	ctl_id = atoi(std::string(grps[2]).c_str());
@@ -328,7 +322,7 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 	j_ctl.push_back(json_spirit::Pair("connections", j_list));
 
 	//Return data
-	j_wrap.push_back(json_spirit::Pair("Controller", j_ctl));
+	j_wrap.push_back(json_spirit::Pair("controller", j_ctl));
 	rep.content = json_spirit::write(j_wrap, true);
 }
 
@@ -531,7 +525,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	}
 
 	//Return assigned ID
-	table.push_back(json_spirit::Pair("assigned id", assigned_id));
+	table.push_back(json_spirit::Pair("controller-id", assigned_id));
 	rep.content = json_spirit::write(table, true);
 }
 

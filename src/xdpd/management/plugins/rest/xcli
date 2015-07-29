@@ -345,7 +345,10 @@ def execute(socket, command, req_confirm=False):
 			if len(stripped) < 5:
 				return "Usage: exec add controller <lsi_name> <mode:ip:port>"
 			if "controller" in command:
-				data = parse_add_controller(stripped[4:])
+				try:
+					data = parse_add_controller(stripped[4:])
+				except Exception as e:
+					return "error: "+str(e)
 				try: 
 					return rest(socket, compose_url(stripped[:4]), data, "PUT")
 				except Exception as e:

@@ -56,6 +56,8 @@ void index(const http::server::request &req, http::server::reply &rep, boost::cm
 	html << "<li><b>/info/lsi/&lt;lsi_name&gt</b>: show logical switch instance(LSI) information" << std::endl;
 	html << "<li><b>/info/lsi/&lt;lsi_name&gt/table/&lt;num&gt/flows</b>: list LSI table flow entries" << std::endl;
 	html << "<li><b>/info/lsi/&lt;lsi_name&gt/group-table</b>: list LSI group table entries" << std::endl;
+	html << "<li><b>/info/lsi/&lt;lsi_name&gt/controllers</b>: list of controllers IDs" << std::endl;
+	html << "<li><b>/info/lsi/&lt;lsi_name&gt/controller/&lt;controller_id&gt</b>: show controller information" << std::endl;
 	html << "</ul>" << std::endl;
 
 	//POST
@@ -75,6 +77,7 @@ void index(const http::server::request &req, http::server::reply &rep, boost::cm
 
 	html << "<li><b>/mgmt/create/lsi</b>: create a LSI" << std::endl;
 	html << "<li><b>/mgmt/create/vlink/&lt;lsi1_name&gt/&lt;lsi2_name&gt</b>: create a virtual link between two LSIs" << std::endl;
+	html << "<li><b>/mgmt/add/controller/&lt;lsi_name&gt</b>: add a new controller to an LSI" << std::endl;
 
 	html << "</ul>" << std::endl;
 
@@ -83,6 +86,7 @@ void index(const http::server::request &req, http::server::reply &rep, boost::cm
 	html << "<ul>" << std::endl;
 
 	html << "<li><b>/mgmt/destroy/lsi/&lt;lsi_name&gt</b>: destroy an LSIs" << std::endl;
+	html << "<li><b>/mgmt/remove/controller/&lt;lsi_name&gt/&lt;controller_id&gt</b>: remove a controller from LSI" << std::endl;
 
 	html << "</ul>" << std::endl;
 
