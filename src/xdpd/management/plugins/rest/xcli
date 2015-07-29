@@ -359,11 +359,11 @@ def execute(socket, command, req_confirm=False):
 		elif "remove" in command:
 			data = ""
 			if len(stripped) < 4:
-                                return "Usage: exec remove controller <lsi_name> <ctl_id>"
+				return "Usage: exec remove controller <lsi_name> <ctl_id>"
 			if "controller" in command:
-                                return rest(socket, compose_url(stripped), data, "DELETE")
-                        else:
-                                return "Usage: exec remove controller <lsi_name> <ctl_id>"
+				return rest(socket, compose_url(stripped), data, "DELETE")
+			else:
+				return "Usage: exec remove controller <lsi_name> <ctl_id>"
 
 		else:
 			return rest(socket, compose_url(stripped), "", "POST")
@@ -471,7 +471,7 @@ class InteractivePrompt(cmd.Cmd):
 		if s == "":
 			print "Invalid empty target name"
 			return
-                if len(s.split()) < 2:
+		if len(s.split()) < 2:
 			print "Invalid number of parameters."
 			return
 		target = s.split()[0]

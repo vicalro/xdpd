@@ -296,11 +296,7 @@ void show_ctl(const http::server::request &req, http::server::reply &rep, boost:
 
 	dpid = switch_manager::get_switch_dpid(lsi_name);
 
-	try{
-		switch_manager::get_controller_info(dpid, ctl_id, ctl_info);
-	}catch(...){
-		throw "Unable to get Controller info for lsi";
-	}
+	switch_manager::get_controller_info(dpid, ctl_id, ctl_info);
 
 	j_ctl.push_back(json_spirit::Pair("id", ctl_info.id));
 	j_ctl.push_back(json_spirit::Pair("channel-status", ctl_info.get_status_str()));
@@ -461,19 +457,19 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	uint64_t assigned_id;
 
 	//Perform security checks
-        if(!authorised(req,rep)) return;
+	if(!authorised(req,rep)) return;
 
 	std::string lsi_name = std::string(grps[1]);
 
 	//Check if LSI exists;
-        if(!switch_manager::exists_by_name(lsi_name)){
-                //Throw 404
-                std::stringstream ss;
-                ss<<"Invalid lsi '"<<lsi_name<<"'";
-                rep.content = ss.str();
-                rep.status = http::server::reply::not_found;
-                return;
-        }
+	if(!switch_manager::exists_by_name(lsi_name)){
+		//Throw 404
+		std::stringstream ss;
+		ss<<"Invalid lsi '"<<lsi_name<<"'";
+		rep.content = ss.str();
+		rep.status = http::server::reply::not_found;
+		return;
+	}
 
 	// Get dpid check for failure
 	uint64_t dpid = switch_manager::get_switch_dpid(lsi_name);
@@ -507,7 +503,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	if ( proto == "tcp" ){
 		socket_type = rofl::csocket::SOCKET_TYPE_PLAIN;
 	} else {
-		// TODO Other types not yet  supported (SOCKET_TYPE_OPENSSL)
+		// TODO Other types not yet supported (SOCKET_TYPE_OPENSSL)
 		std::stringstream ss;
 		ss<<"Invalid protocol '"<<lsi_name<<"'";
 		rep.content = ss.str();
@@ -518,11 +514,7 @@ void add_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_HOSTNAME) = ip;
 	socket_params.set_param(rofl::csocket::PARAM_KEY_REMOTE_PORT) = port;
 
-	try{
-		assigned_id = switch_manager::connect_to_ctl(dpid, socket_type, socket_params);
-	}catch(...){
-                throw "Unable to add controller to lsi";
-	}
+	assigned_id = switch_manager::connect_to_ctl(dpid, socket_type, socket_params);
 
 	//Return assigned ID
 	table.push_back(json_spirit::Pair("controller-id", assigned_id));
@@ -579,27 +571,22 @@ void rem_ctl(const http::server::request &req, http::server::reply &rep, boost::
 	ctlid_str = std::string(grps[2]);
 
 	//Check if LSI exists;
-        if(!switch_manager::exists_by_name(lsi_name)){
-                //Throw 404
-                std::stringstream ss;
-                ss<<"Invalid lsi '"<<lsi_name<<"'";
-                rep.content = ss.str();
-                rep.status = http::server::reply::not_found;
-                return;
-        }
+	if(!switch_manager::exists_by_name(lsi_name)){
+		std::stringstream ss;
+		ss<<"Invalid lsi '"<<lsi_name<<"'";
+		rep.content = ss.str();
+		rep.status = http::server::reply::not_found;
+		return;
+	}
 
-	// Get dpid
+	//Get dpid
 	dpid = switch_manager::get_switch_dpid(lsi_name);
 
-	// get Ctlid
+	//Get controller id
 	ctl_id = atoi(ctlid_str.c_str());
 	rofl::cctlid ctlid(ctl_id);
 
-	try{
-		switch_manager::disconnect_from_ctl(dpid, ctlid);
-	}catch(...){
-                throw "Unable to remove controller from lsi";
-	}
+	switch_manager::disconnect_from_ctl(dpid, ctlid);
 }
 
 } //namespace delete
